@@ -144,10 +144,11 @@ function processSheetData(values, tipoGrado) {
 // Función para leer datos de Google Sheets - Lee TODOS los registros sin limitaciones
 async function readGoogleSheetsData() {
   try {
-    // URLs directas para leer TODAS las filas de ambas hojas sin limitaciones
+    // URLs que funcionan correctamente para acceder a TODOS los registros
     // GID correcto para egresados tecnicos: 1426995834 (hoja con 2000+ registros)
-    const tecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=1426995834`;
-    const bachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=1`;
+    // Usando gviz/tq que permite acceso completo sin limitaciones
+    const tecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1426995834`;
+    const bachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
     
     console.log('Leyendo datos completos de Google Sheets...');
     
