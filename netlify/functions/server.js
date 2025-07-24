@@ -217,6 +217,29 @@ app.get('/api/verify-diploma', async (req, res) => {
   }
 });
 
+// Ruta de debug temporal para ver estructura de datos
+app.get('/api/debug', async (req, res) => {
+  try {
+    const diplomasData = await readGoogleSheetsData();
+    const sampleData = diplomasData.slice(0, 2); // Solo los primeros 2 registros
+    
+    res.json({
+      success: true,
+      message: 'Debug data from Google Sheets',
+      total_records: diplomasData.length,
+      sample_data: sampleData,
+      available_columns: sampleData.length > 0 ? Object.keys(sampleData[0]) : []
+    });
+  } catch (error) {
+    console.error('Error en debug:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo datos de debug',
+      error: error.message
+    });
+  }
+});
+
 // Ruta de estadísticas
 app.get('/api/stats', async (req, res) => {
   try {
