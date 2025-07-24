@@ -201,8 +201,8 @@ app.get('/api/verify-diploma', async (req, res) => {
           fecha_emision: diploma['FECHA DE EMISIÓN'] || 'No especificada'
         },
         institucion: {
-          nombre: 'Institución Universitaria Antonio José Camacho - INANDINA',
-          ciudad: 'Cali',
+          nombre: 'Inandina',
+          ciudad: 'Villavicencio',
           pais: 'Colombia'
         }
       }
