@@ -150,9 +150,9 @@ async function readGoogleSheetsData() {
 }
 
 // Ruta para verificar diploma
-app.post('/api/verify-diploma', async (req, res) => {
+app.get('/api/verify-diploma', async (req, res) => {
   try {
-    const { cedula } = req.body;
+    const cedula = req.query.id || req.query.cedula;
     
     if (!cedula || cedula.trim() === '') {
       return res.status(400).json({
