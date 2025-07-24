@@ -257,6 +257,31 @@ app.get('/api/verify-diploma', async (req, res) => {
   }
 });
 
+// Ruta para obtener estadísticas reales del sistema
+app.get('/api/statistics', async (req, res) => {
+  try {
+    const diplomasData = await readGoogleSheetsData();
+    const totalDiplomas = diplomasData.length;
+    
+    res.json({
+      success: true,
+      message: 'Estadísticas del sistema obtenidas exitosamente',
+      data: {
+        diplomas_registrados: totalDiplomas,
+        estudiantes: totalDiplomas, // Cada diploma corresponde a un estudiante
+        instituciones: 1 // Solo Inandina
+      }
+    });
+  } catch (error) {
+    console.error('Error obteniendo estadísticas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo estadísticas del sistema',
+      error: error.message
+    });
+  }
+});
+
 // Ruta de debug temporal para ver estructura de datos
 app.get('/api/debug', async (req, res) => {
   try {

@@ -184,16 +184,16 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    // Función para cargar estadísticas
+    // Función para cargar estadísticas reales del sistema
     async function loadStatistics() {
         try {
-            const response = await fetch('/api/stats');
+            const response = await fetch('/api/statistics');
             const data = await response.json();
 
             if (data.success) {
-                document.getElementById('totalDiplomas').textContent = data.data.total_diplomas;
-                document.getElementById('totalEstudiantes').textContent = data.data.total_estudiantes;
-                document.getElementById('totalInstituciones').textContent = data.data.total_instituciones;
+                document.getElementById('totalDiplomas').textContent = data.data.diplomas_registrados.toLocaleString();
+                document.getElementById('totalEstudiantes').textContent = data.data.estudiantes.toLocaleString();
+                document.getElementById('totalInstituciones').textContent = data.data.instituciones;
             }
         } catch (error) {
             console.error('Error cargando estadísticas:', error);
