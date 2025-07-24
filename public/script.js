@@ -55,12 +55,11 @@ document.addEventListener('DOMContentLoaded', function() {
             hideError();
 
             // Realizar petición a la API
-            const response = await fetch('/api/verify-diploma', {
-                method: 'POST',
+            const response = await fetch(`/api/verify-diploma?id=${encodeURIComponent(cedula)}`, {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ cedula: cedula })
+                }
             });
 
             const data = await response.json();
