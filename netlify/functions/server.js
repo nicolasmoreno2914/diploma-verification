@@ -145,7 +145,8 @@ function processSheetData(values, tipoGrado) {
 async function readGoogleSheetsData() {
   try {
     // URLs directas para leer TODAS las filas de ambas hojas sin limitaciones
-    const tecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=0`;
+    // GID correcto para egresados tecnicos: 1426995834 (hoja con 2000+ registros)
+    const tecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=1426995834`;
     const bachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=1`;
     
     console.log('Leyendo datos completos de Google Sheets...');
