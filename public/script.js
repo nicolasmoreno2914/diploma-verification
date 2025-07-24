@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="col-md-6">
                             <div class="info-label">Fecha de Graduación:</div>
-                            <div class="info-value">${formatDate(diploma.fecha_graduacion)}</div>
+                            <div class="info-value">${diploma.fecha_graduacion}</div>
                         </div>
                         <div class="col-md-6">
                             <div class="info-label">Número de Diploma:</div>
