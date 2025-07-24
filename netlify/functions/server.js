@@ -22,6 +22,46 @@ app.use('/api/', limiter);
 // Configuración de Google Sheets
 const SPREADSHEET_ID = '1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0';
 
+// Función para formatear fechas desde Google Sheets (DD/MM/YYYY -> formato legible)
+function formatDate(dateString) {
+  if (!dateString || dateString.trim() === '') return 'No especificada';
+  
+  try {
+    // Si viene en formato DD/MM/YYYY (como "08/01/2020")
+    if (dateString.includes('/')) {
+      const [day, month, year] = dateString.split('/');
+      const date = new Date(year, month - 1, day); // month - 1 porque los meses van de 0-11
+      
+      if (isNaN(date.getTime())) {
+        return dateString; // Si no se puede parsear, devolver original
+      }
+      
+      // Formatear como "8 de enero de 2020"
+      const months = [
+        'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+      ];
+      
+      return `${parseInt(day)} de ${months[date.getMonth()]} de ${year}`;
+    }
+    
+    // Si viene en otro formato, intentar parsearlo directamente
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return dateString; // Si no se puede parsear, devolver original
+    }
+    
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formateando fecha:', error);
+    return dateString; // En caso de error, devolver la fecha original
+  }
+}
+
 // Función para parsear CSV
 function parseCSV(csvText) {
   const lines = csvText.split('\n');
@@ -193,9 +233,9 @@ app.get('/api/verify-diploma', async (req, res) => {
         diploma: {
           titulo: diploma['Tipo_Grado'] || 'No especificado',
           programa_academico: diploma['ALIADO'] || diploma['Tipo_Grado'] || 'Programa Técnico',
-          fecha_graduacion: diploma['FECHA DE GRADO'] || 'No especificada',
+          fecha_graduacion: diploma['FECHA DE GRADO'] ? formatDate(diploma['FECHA DE GRADO']) : 'No especificada',
           numero_diploma: diploma['NUMERO DE DIPLOMA'] || 'No especificado',
-          codigo_verificacion: diploma['Acta No.'] || 'No especificado',
+          codigo_verificacion: diploma['NUMERO DE DIPLOMA'] || 'No especificado',
           grado_academico: diploma['Tipo_Grado'] || 'No especificado',
           modalidad: diploma['ALIADO'] ? diploma['ALIADO'] : 'Presencial',
           fecha_emision: diploma['FECHA DE EMISIÓN'] || 'No especificada'
