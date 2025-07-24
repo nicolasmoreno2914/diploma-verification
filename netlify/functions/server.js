@@ -141,47 +141,42 @@ function processSheetData(values, tipoGrado) {
   return processedData;
 }
 
-// Función para leer datos de Google Sheets
+// Función para leer datos de Google Sheets - Lee TODOS los registros sin limitaciones
 async function readGoogleSheetsData() {
   try {
-    const sheets = google.sheets({ version: 'v4' });
+    // URLs directas para leer TODAS las filas de ambas hojas sin limitaciones
+    const tecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=0`;
+    const bachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=1`;
     
-    const requestConfig = {
-      spreadsheetId: SPREADSHEET_ID,
-      range: 'A:Z',
-    };
+    console.log('Leyendo datos completos de Google Sheets...');
     
-    if (process.env.GOOGLE_API_KEY) {
-      requestConfig.key = process.env.GOOGLE_API_KEY;
-    }
-    
-    // Leer ambas hojas usando la API oficial con fallback a CSV
+    // Leer ambas hojas en paralelo
     const [tecnicosResponse, bachilleresResponse] = await Promise.all([
-      sheets.spreadsheets.values.get({
-        ...requestConfig,
-        range: 'tecnicos!A:Z'
-      }).catch(async (error) => {
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=0&single=true&output=csv`;
-        const response = await fetch(csvUrl);
-        const csvText = await response.text();
-        return { data: { values: parseCSV(csvText) } };
-      }),
-      
-      sheets.spreadsheets.values.get({
-        ...requestConfig,
-        range: 'bachilleres!A:Z'
-      }).catch(async (error) => {
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=1&single=true&output=csv`;
-        const response = await fetch(csvUrl);
-        const csvText = await response.text();
-        return { data: { values: parseCSV(csvText) } };
-      })
+      fetch(tecnicosUrl).then(response => response.text()),
+      fetch(bachilleresUrl).then(response => response.text())
     ]);
     
-    const tecnicosData = processSheetData(tecnicosResponse.data.values || [], 'Técnico');
-    const bachilleresData = processSheetData(bachilleresResponse.data.values || [], 'Bachiller');
+    console.log('Datos de técnicos recibidos, tamaño:', tecnicosResponse.length);
+    console.log('Datos de bachilleres recibidos, tamaño:', bachilleresResponse.length);
     
-    return [...tecnicosData, ...bachilleresData];
+    // Parsear los datos CSV
+    const tecnicosValues = parseCSV(tecnicosResponse);
+    const bachilleresValues = parseCSV(bachilleresResponse);
+    
+    console.log('Filas de técnicos parseadas:', tecnicosValues.length);
+    console.log('Filas de bachilleres parseadas:', bachilleresValues.length);
+    
+    // Procesar los datos
+    const tecnicosData = processSheetData(tecnicosValues, 'Técnico');
+    const bachilleresData = processSheetData(bachilleresValues, 'Bachiller');
+    
+    console.log('Registros válidos de técnicos:', tecnicosData.length);
+    console.log('Registros válidos de bachilleres:', bachilleresData.length);
+    
+    const totalData = [...tecnicosData, ...bachilleresData];
+    console.log('Total de registros combinados:', totalData.length);
+    
+    return totalData;
     
   } catch (error) {
     console.error('Error leyendo Google Sheets:', error);
