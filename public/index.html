@@ -141,6 +141,262 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="script-v2.js"></script>
+    <script>
+        // Sistema de Verificación de Diplomas - Solución Embebida Definitiva
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Script embebido cargado correctamente');
+            
+            // Cargar estadísticas fijas inmediatamente
+            document.getElementById('totalDiplomas').textContent = '2,794';
+            document.getElementById('totalEstudiantes').textContent = '2,794';
+            document.getElementById('totalInstituciones').textContent = '1';
+            console.log('Estadísticas cargadas correctamente');
+            
+            // Elementos del DOM
+            const form = document.getElementById('verificationForm');
+            const cedulaInput = document.getElementById('cedula');
+            const loadingDiv = document.getElementById('loadingSpinner');
+            const resultsDiv = document.getElementById('resultsCard');
+            const errorDiv = document.getElementById('errorCard');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // URLs de Google Sheets
+            const gvizTecnicosUrl = 'https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=1426995834';
+            const gvizBachilleresUrl = 'https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=0';
+            
+            // Event listener para el formulario
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const cedula = cedulaInput.value.trim();
+                if (cedula) {
+                    searchDiploma(cedula);
+                }
+            });
+            
+            // Función principal de búsqueda
+            async function searchDiploma(cedula) {
+                showLoading();
+                hideResults();
+                hideError();
+                
+                try {
+                    console.log('Buscando cédula:', cedula);
+                    
+                    // Buscar en técnicos primero
+                    const tecnicosResponse = await fetch(gvizTecnicosUrl);
+                    const tecnicosText = await tecnicosResponse.text();
+                    console.log('Datos técnicos obtenidos, tamaño:', tecnicosText.length);
+                    
+                    let result = searchDirectInCSV(tecnicosText, cedula, 'Técnico');
+                    
+                    if (!result) {
+                        // Buscar en bachilleres si no se encuentra en técnicos
+                        const bachilleresResponse = await fetch(gvizBachilleresUrl);
+                        const bachilleresText = await bachilleresResponse.text();
+                        console.log('Datos bachilleres obtenidos, tamaño:', bachilleresText.length);
+                        
+                        result = searchDirectInCSV(bachilleresText, cedula, 'Bachiller');
+                    }
+                    
+                    hideLoading();
+                    
+                    if (result) {
+                        console.log('Diploma encontrado:', result);
+                        displayDiplomaInfo(result);
+                    } else {
+                        console.log('Diploma no encontrado para cédula:', cedula);
+                        showError('No se encontró ningún diploma registrado para esta cédula');
+                    }
+                } catch (error) {
+                    console.error('Error en la búsqueda:', error);
+                    hideLoading();
+                    showError('Error de conexión. Por favor intente de nuevo más tarde.');
+                }
+            }
+            
+            // Función para buscar directamente en CSV
+            function searchDirectInCSV(csvText, targetId, tipo) {
+                const lines = csvText.split('\n');
+                const normalizedTarget = targetId.toString().replace(/[^0-9]/g, '');
+                console.log('Buscando ID normalizado:', normalizedTarget, 'en', tipo);
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (line.includes(normalizedTarget)) {
+                        console.log('Línea encontrada:', line);
+                        const cells = parseCSVLine(line);
+                        
+                        // Buscar la columna que contiene el documento
+                        let documentColumn = -1;
+                        let nameColumn = -1;
+                        let dateColumn = -1;
+                        let diplomaColumn = -1;
+                        
+                        for (let j = 0; j < cells.length; j++) {
+                            const cellValue = cells[j].replace(/[^0-9]/g, '');
+                            if (cellValue === normalizedTarget) {
+                                documentColumn = j;
+                                console.log('Documento encontrado en columna:', j);
+                                
+                                if (tipo === 'Técnico') {
+                                    // Para técnicos: buscar nombre, fecha y diploma en columnas cercanas
+                                    nameColumn = findColumnWithContent(cells, j, ['nombre', 'apellido'], 3);
+                                    dateColumn = findColumnWithContent(cells, j, ['fecha', 'grado'], 5);
+                                    diplomaColumn = findColumnWithContent(cells, j, ['diploma', 'numero'], 5);
+                                } else {
+                                    // Para bachilleres: usar posiciones conocidas
+                                    nameColumn = 0;
+                                    dateColumn = 2;
+                                    diplomaColumn = 3;
+                                }
+                                break;
+                            }
+                        }
+                        
+                        if (documentColumn !== -1) {
+                            const nombres = nameColumn !== -1 ? cells[nameColumn] : 'Nombre no disponible';
+                            const fechaGrado = dateColumn !== -1 ? cells[dateColumn] : '';
+                            const numeroDiploma = diplomaColumn !== -1 ? cells[diplomaColumn] : 'N/A';
+                            
+                            console.log('Datos extraídos:', { nombres, fechaGrado, numeroDiploma });
+                            
+                            return {
+                                nombres: nombres,
+                                fechaGraduacion: formatDate(fechaGrado),
+                                codigoVerificacion: numeroDiploma,
+                                tipo: tipo,
+                                institucion: 'Inandina',
+                                ciudad: 'Villavicencio'
+                            };
+                        }
+                    }
+                }
+                
+                return null;
+            }
+            
+            // Función para encontrar columna con contenido específico
+            function findColumnWithContent(cells, startColumn, keywords, maxDistance) {
+                for (let distance = 1; distance <= maxDistance; distance++) {
+                    // Buscar hacia la izquierda
+                    const leftIndex = startColumn - distance;
+                    if (leftIndex >= 0 && cells[leftIndex] && cells[leftIndex].trim()) {
+                        const content = cells[leftIndex].toLowerCase();
+                        if (keywords.some(keyword => content.includes(keyword)) || content.length > 5) {
+                            return leftIndex;
+                        }
+                    }
+                    
+                    // Buscar hacia la derecha
+                    const rightIndex = startColumn + distance;
+                    if (rightIndex < cells.length && cells[rightIndex] && cells[rightIndex].trim()) {
+                        const content = cells[rightIndex].toLowerCase();
+                        if (keywords.some(keyword => content.includes(keyword)) || content.length > 5) {
+                            return rightIndex;
+                        }
+                    }
+                }
+                return -1;
+            }
+            
+            // Función para parsear una línea CSV
+            function parseCSVLine(line) {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            }
+            
+            // Función para formatear fecha
+            function formatDate(dateStr) {
+                if (!dateStr || dateStr.trim() === '') return 'Fecha no disponible';
+                
+                try {
+                    // Intentar parsear diferentes formatos de fecha
+                    let date;
+                    if (dateStr.includes('/')) {
+                        const parts = dateStr.split('/');
+                        if (parts.length === 3) {
+                            date = new Date(parts[2], parts[1] - 1, parts[0]);
+                        }
+                    } else if (dateStr.includes('-')) {
+                        date = new Date(dateStr);
+                    } else {
+                        return dateStr; // Devolver como está si no se puede parsear
+                    }
+                    
+                    if (date && !isNaN(date.getTime())) {
+                        return date.toLocaleDateString('es-ES', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error formateando fecha:', error);
+                }
+                
+                return dateStr; // Devolver original si hay error
+            }
+            
+            // Función para mostrar información del diploma
+            function displayDiplomaInfo(diplomaInfo) {
+                document.getElementById('studentName').textContent = diplomaInfo.nombres;
+                document.getElementById('graduationDate').textContent = diplomaInfo.fechaGraduacion;
+                document.getElementById('verificationCode').textContent = diplomaInfo.codigoVerificacion;
+                document.getElementById('diplomaType').textContent = diplomaInfo.tipo;
+                document.getElementById('institution').textContent = diplomaInfo.institucion;
+                document.getElementById('city').textContent = diplomaInfo.ciudad;
+                showResults();
+            }
+            
+            // Funciones de utilidad para mostrar/ocultar elementos
+            function showLoading() {
+                loadingDiv.style.display = 'block';
+            }
+            
+            function hideLoading() {
+                loadingDiv.style.display = 'none';
+            }
+            
+            function showResults() {
+                resultsDiv.style.display = 'block';
+            }
+            
+            function hideResults() {
+                resultsDiv.style.display = 'none';
+            }
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+            
+            function hideError() {
+                errorDiv.style.display = 'none';
+            }
+            
+            // Verificar si hay cédula en URL al cargar
+            const urlParams = new URLSearchParams(window.location.search);
+            const cedulaParam = urlParams.get('cedula');
+            if (cedulaParam) {
+                cedulaInput.value = cedulaParam;
+                searchDiploma(cedulaParam);
+            }
+        });
+    </script>
 </body>
 </html>
