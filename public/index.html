@@ -76,6 +76,192 @@
         padding: 2rem;
         background: #fff;
     }
+
+    /* ========== ANIMACIONES SUAVES ========== */
+    * {
+        transition: all 0.3s ease;
+    }
+
+    /* Animaciones de entrada */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    /* Aplicar animaciones */
+    .card {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .navbar {
+        animation: slideInLeft 0.8s ease-out;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .btn:active {
+        transform: translateY(0);
+        transition: all 0.1s ease;
+    }
+
+    /* Loading animation */
+    .spinner-border {
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    /* Hover effects */
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    }
+
+    .navbar-brand:hover {
+        transform: scale(1.02);
+    }
+
+    /* ========== MODO OSCURO ========== */
+    
+    /* Variables CSS para colores */
+    :root {
+        --bg-color: #ffffff;
+        --text-color: #333333;
+        --card-bg: #ffffff;
+        --navbar-bg: #ffffff;
+        --border-color: #dee2e6;
+        --shadow: rgba(0,0,0,0.1);
+        --shadow-hover: rgba(0,0,0,0.15);
+        --input-bg: #ffffff;
+        --input-border: #ced4da;
+        --alert-bg: #f8f9fa;
+        --alert-border: #dee2e6;
+        --alert-text: #495057;
+    }
+
+    [data-theme="dark"] {
+        --bg-color: #1a1a1a;
+        --text-color: #ffffff;
+        --card-bg: #2d2d2d;
+        --navbar-bg: #2d2d2d;
+        --border-color: #404040;
+        --shadow: rgba(0,0,0,0.3);
+        --shadow-hover: rgba(0,0,0,0.4);
+        --input-bg: #404040;
+        --input-border: #555555;
+        --alert-bg: #3d3d3d;
+        --alert-border: #555555;
+        --alert-text: #ffffff;
+    }
+
+    /* Aplicar variables */
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .navbar {
+        background-color: var(--navbar-bg) !important;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .navbar-brand, .navbar-text {
+        color: var(--text-color) !important;
+    }
+
+    .card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 15px var(--shadow);
+    }
+
+    .card:hover {
+        box-shadow: 0 15px 35px var(--shadow-hover);
+    }
+
+    .form-control {
+        background-color: var(--input-bg);
+        border-color: var(--input-border);
+        color: var(--text-color);
+    }
+
+    .form-control:focus {
+        background-color: var(--input-bg);
+        border-color: #28a745;
+        color: var(--text-color);
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+
+    .alert {
+        background-color: var(--alert-bg);
+        border-color: var(--alert-border);
+        color: var(--alert-text);
+    }
+
+    /* Dark mode toggle button */
+    #darkModeToggle {
+        border: 2px solid var(--border-color);
+        color: var(--text-color);
+        background-color: transparent;
+        transition: all 0.3s ease;
+    }
+
+    #darkModeToggle:hover {
+        background-color: var(--border-color);
+        transform: rotate(180deg);
+    }
+
+    /* Carrusel en modo oscuro */
+    [data-theme="dark"] .diploma-card .card-body {
+        background: var(--card-bg);
+        color: var(--text-color);
+    }
+
+    [data-theme="dark"] .carousel-control-prev-icon,
+    [data-theme="dark"] .carousel-control-next-icon {
+        filter: invert(1);
+    }
+
+    /* Responsive animations */
+    @media (max-width: 768px) {
+        .card {
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .btn:hover {
+            transform: none;
+        }
+    }
     </style>
 </head>
 <body>
@@ -89,6 +275,11 @@
                     <div class="brand-subtitle">Consulta Segura y Confiable</div>
                 </div>
             </a>
+            
+            <!-- Dark Mode Toggle -->
+            <button id="darkModeToggle" class="btn btn-outline-secondary btn-sm ms-auto" type="button" title="Cambiar modo">
+                <i id="darkModeIcon" class="fas fa-moon"></i>
+            </button>
         </div>
     </nav>
 
@@ -619,6 +810,154 @@
                 cedulaInput.value = cedulaParam;
                 searchDiploma(cedulaParam);
             }
+
+            // ========== FUNCIONALIDAD MODO OSCURO/CLARO ==========
+            
+            // Elementos del modo oscuro
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const darkModeIcon = document.getElementById('darkModeIcon');
+            
+            // Verificar preferencia guardada o preferencia del sistema
+            function getInitialTheme() {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme) {
+                    return savedTheme;
+                }
+                
+                // Detectar preferencia del sistema
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    return 'dark';
+                }
+                
+                return 'light';
+            }
+            
+            // Aplicar tema
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    darkModeIcon.className = 'fas fa-sun';
+                    darkModeToggle.title = 'Cambiar a modo claro';
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    darkModeIcon.className = 'fas fa-moon';
+                    darkModeToggle.title = 'Cambiar a modo oscuro';
+                }
+                
+                localStorage.setItem('theme', theme);
+            }
+            
+            // Alternar tema
+            function toggleTheme() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                // Agregar animación de transición suave
+                document.body.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+                
+                applyTheme(newTheme);
+                
+                // Agregar efecto visual al botón
+                darkModeToggle.style.transform = 'rotate(360deg)';
+                setTimeout(() => {
+                    darkModeToggle.style.transform = '';
+                }, 300);
+            }
+            
+            // Event listener para el botón
+            darkModeToggle.addEventListener('click', toggleTheme);
+            
+            // Aplicar tema inicial
+            applyTheme(getInitialTheme());
+            
+            // Escuchar cambios en la preferencia del sistema
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (!localStorage.getItem('theme')) {
+                        applyTheme(e.matches ? 'dark' : 'light');
+                    }
+                });
+            }
+            
+            // ========== ANIMACIONES ADICIONALES ==========
+            
+            // Agregar animaciones de entrada a elementos cuando aparecen
+            function addEntranceAnimations() {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.style.animation = 'fadeInUp 0.6s ease-out';
+                        }
+                    });
+                });
+                
+                // Observar elementos que aparecen dinámicamente
+                document.querySelectorAll('.card, .alert').forEach(el => {
+                    observer.observe(el);
+                });
+            }
+            
+            // Agregar efecto de ripple a los botones
+            function addRippleEffect() {
+                document.querySelectorAll('.btn').forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        const ripple = document.createElement('span');
+                        const rect = this.getBoundingClientRect();
+                        const size = Math.max(rect.width, rect.height);
+                        const x = e.clientX - rect.left - size / 2;
+                        const y = e.clientY - rect.top - size / 2;
+                        
+                        ripple.style.cssText = `
+                            position: absolute;
+                            width: ${size}px;
+                            height: ${size}px;
+                            left: ${x}px;
+                            top: ${y}px;
+                            background: rgba(255,255,255,0.3);
+                            border-radius: 50%;
+                            transform: scale(0);
+                            animation: ripple 0.6s linear;
+                            pointer-events: none;
+                        `;
+                        
+                        this.style.position = 'relative';
+                        this.style.overflow = 'hidden';
+                        this.appendChild(ripple);
+                        
+                        setTimeout(() => {
+                            ripple.remove();
+                        }, 600);
+                    });
+                });
+            }
+            
+            // CSS para el efecto ripple
+            const rippleCSS = `
+                @keyframes ripple {
+                    to {
+                        transform: scale(4);
+                        opacity: 0;
+                    }
+                }
+            `;
+            
+            const style = document.createElement('style');
+            style.textContent = rippleCSS;
+            document.head.appendChild(style);
+            
+            // Inicializar animaciones
+            addEntranceAnimations();
+            addRippleEffect();
+            
+            // Agregar animación de carga suave a la página
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease';
+            
+            window.addEventListener('load', () => {
+                document.body.style.opacity = '1';
+            });
+            
+            console.log('🎨 Modo oscuro/claro y animaciones suaves activados!');
         });
     </script>
 </body>
