@@ -1,6 +1,8 @@
 // Sistema de Verificación de Diplomas - Solución Cliente Completa
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Script cargado correctamente');
+    
     // Elementos del DOM
     const form = document.getElementById('verificationForm');
     const cedulaInput = document.getElementById('cedula');
@@ -9,8 +11,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorDiv = document.getElementById('errorCard');
     const errorMessage = document.getElementById('errorMessage');
     
-    // Cargar estadísticas fijas
-    loadStatistics();
+    // Cargar estadísticas fijas inmediatamente
+    try {
+        document.getElementById('totalDiplomas').textContent = '2,794';
+        document.getElementById('totalEstudiantes').textContent = '2,794';
+        document.getElementById('totalInstituciones').textContent = '1';
+        console.log('Estadísticas cargadas correctamente');
+    } catch (error) {
+        console.error('Error cargando estadísticas:', error);
+    }
     
     // Event listener para el formulario
     form.addEventListener('submit', function(e) {
@@ -298,13 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    // Función para cargar estadísticas fijas
-    function loadStatistics() {
-        // Usar valores fijos según decisión del usuario
-        document.getElementById('totalDiplomas').textContent = '2,794';
-        document.getElementById('totalEstudiantes').textContent = '2,794';
-        document.getElementById('totalInstituciones').textContent = '1';
-    }
+
 
     // Funciones de utilidad para mostrar/ocultar elementos
     function showLoading() {
