@@ -410,7 +410,7 @@
                         console.log(`Se encontraron ${allDiplomas.length} diplomas:`, allDiplomas);
                         displayMultipleDiplomas(allDiplomas);
                     } else {
-                        showError('No se encontró ningún diploma registrado para esta cédula');
+                        showError('Lamentamos informarle que no fue posible validar exitosamente la solicitud de verificación académica. Tras consultar nuestras bases de datos y el sistema de información institucional, la persona identificada en su solicitud NO se encuentra registrada como egresada de INANDINA.\n\nLe recomendamos informar al candidato que debe presentarse con sus documentos originales en nuestra oficina principal en Villavicencio, ubicada en la Calle 26 No. 36 - 49, enseguida de la Iglesia Católica del barrio San Benito, con el fin de verificar su situación académica y financiera.\n\nSi requiere mayor información o desea realizar una verificación directa, puede comunicarse con nuestro equipo académico a través del correo:\n📧 verificacion.academica@inandina.edu.co\n\nAgradecemos su comprensión.');
                     }
                 } catch (error) {
                     console.error('Error en la búsqueda:', error);
