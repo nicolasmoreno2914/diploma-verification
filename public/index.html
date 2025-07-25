@@ -239,10 +239,10 @@
                                 console.log('Documento encontrado en columna:', j);
                                 
                                 if (tipo === 'Técnico') {
-                                    // Para técnicos: buscar nombre, fecha y diploma en columnas cercanas
-                                    nameColumn = findColumnWithContent(cells, j, ['nombre', 'apellido'], 3);
-                                    dateColumn = findColumnWithContent(cells, j, ['fecha', 'grado'], 5);
-                                    diplomaColumn = findColumnWithContent(cells, j, ['diploma', 'numero'], 5);
+                                    // Para técnicos: usar posiciones fijas basadas en estructura real
+                                    nameColumn = 1;  // NOMBRES Y APELLIDOS
+                                    dateColumn = 3;  // FECHA DE GRADO  
+                                    diplomaColumn = 5; // NÚMERO DE DIPLOMA
                                 } else {
                                     // Para bachilleres: usar posiciones conocidas
                                     nameColumn = 0;
