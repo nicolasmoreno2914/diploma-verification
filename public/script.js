@@ -55,7 +55,11 @@ document.addEventListener('DOMContentLoaded', function() {
             hideError();
 
             // Realizar petición a la API
-            const response = await fetch(`/api/verify-diploma?id=${encodeURIComponent(cedula)}`, {
+            const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? `/api/verify-diploma?id=${encodeURIComponent(cedula)}`
+                : `/.netlify/functions/server/api/verify-diploma?id=${encodeURIComponent(cedula)}`;
+            
+            const response = await fetch(apiUrl, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -187,7 +191,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Función para cargar estadísticas reales del sistema
     async function loadStatistics() {
         try {
-            const response = await fetch('/api/statistics');
+            const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? '/api/statistics'
+                : '/.netlify/functions/server/api/statistics';
+            
+            const response = await fetch(apiUrl);
             const data = await response.json();
 
             if (data.success) {
