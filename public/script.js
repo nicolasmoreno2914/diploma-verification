@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Función para buscar directamente en CSV
+    // Función para buscar directamente en CSV con mapeo robusto
     function searchDirectInCSV(csvText, targetId, tipo) {
         const lines = csvText.split('\n');
         const normalizedTarget = targetId.toString().replace(/[^0-9]/g, '');
@@ -116,21 +116,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Parsear la línea encontrada
                 const cells = parseCSVLine(line);
                 
-                // Mapeo basado en la estructura del CSV
-                const rowData = {
-                    numero_documento: cells[2] ? cells[2].toString().trim() : normalizedTarget,
-                    nombre_completo: cells[1] ? cells[1].toString().trim() : '',
-                    fecha_graduacion: cells[3] ? formatDate(cells[3].toString().trim()) : '',
-                    codigo_verificacion: cells[5] ? cells[5].toString().trim() : '',
-                    tipo_grado: tipo,
-                    institucion: 'Inandina',
-                    ciudad: 'Villavicencio'
-                };
+                // Buscar la columna que contiene el número de documento
+                let documentColumn = -1;
+                let nameColumn = -1;
+                let dateColumn = -1;
+                let diplomaColumn = -1;
                 
-                // Verificar que encontramos el documento correcto
-                const documentoEncontrado = rowData.numero_documento.replace(/[^0-9]/g, '');
-                if (documentoEncontrado === normalizedTarget) {
-                    return rowData;
+                for (let j = 0; j < cells.length; j++) {
+                    const cell = cells[j].toString().replace(/[^0-9]/g, '');
+                    
+                    // Si esta celda contiene exactamente nuestro número objetivo
+                    if (cell === normalizedTarget) {
+                        documentColumn = j;
+                        
+                        // Mapeo dinámico basado en la posición encontrada
+                        if (tipo === 'Técnico') {
+                            // Para técnicos: nombre suele estar 1 posición antes del documento
+                            nameColumn = Math.max(0, j - 1);
+                            // Fecha suele estar 1 posición después del documento
+                            dateColumn = j + 1;
+                            // Diploma suele estar 3 posiciones después del documento
+                            diplomaColumn = j + 3;
+                        } else {
+                            // Para bachilleres: mapeo estándar
+                            nameColumn = 1;
+                            dateColumn = 3;
+                            diplomaColumn = 5;
+                        }
+                        break;
+                    }
+                }
+                
+                // Si encontramos el documento, extraer los datos
+                if (documentColumn >= 0) {
+                    const rowData = {
+                        numero_documento: cells[documentColumn] ? cells[documentColumn].toString().trim() : normalizedTarget,
+                        nombre_completo: (nameColumn >= 0 && cells[nameColumn]) ? cells[nameColumn].toString().trim() : '',
+                        fecha_graduacion: (dateColumn >= 0 && cells[dateColumn]) ? formatDate(cells[dateColumn].toString().trim()) : '',
+                        codigo_verificacion: (diplomaColumn >= 0 && cells[diplomaColumn]) ? cells[diplomaColumn].toString().trim() : '',
+                        tipo_grado: tipo,
+                        institucion: 'Inandina',
+                        ciudad: 'Villavicencio'
+                    };
+                    
+                    // Verificar que tenemos datos válidos
+                    if (rowData.nombre_completo && rowData.nombre_completo.length > 3) {
+                        return rowData;
+                    }
                 }
             }
         }
