@@ -490,27 +490,82 @@ app.get('/api/test-tecnicos', async (req, res) => {
   }
 });
 
+// Función de búsqueda directa en CSV sin procesamiento complejo
+function searchDirectInCSV(csvText, targetId) {
+  const lines = csvText.split('\n');
+  const normalizedTarget = targetId.toString().replace(/[^0-9]/g, '');
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.includes(normalizedTarget)) {
+      // Parsear la línea encontrada
+      const cells = parseCSV(line + '\n')[0] || [];
+      
+      // Crear objeto con los datos encontrados
+      const rowData = {
+        'NUMERO DE DOCUMENTO': normalizedTarget,
+        'NOMBRES Y APELLIDOS': '',
+        'FECHA DE GRADO': '',
+        'NUMERO DE DIPLOMA': ''
+      };
+      
+      // Mapear datos de las celdas
+      for (let j = 0; j < cells.length; j++) {
+        const cellValue = cells[j] ? cells[j].toString().trim() : '';
+        
+        // Detectar nombres (letras y espacios, más de 5 caracteres)
+        if (/^[A-Za-zÀ-ÿ\s]+$/.test(cellValue) && cellValue.length > 5) {
+          if (!rowData['NOMBRES Y APELLIDOS'] || cellValue.length > rowData['NOMBRES Y APELLIDOS'].length) {
+            rowData['NOMBRES Y APELLIDOS'] = cellValue;
+          }
+        }
+        
+        // Detectar fechas
+        if (/\d{1,2}[\/-]\d{1,2}[\/-]\d{4}/.test(cellValue) || 
+            /\d{4}[\/-]\d{1,2}[\/-]\d{1,2}/.test(cellValue)) {
+          rowData['FECHA DE GRADO'] = cellValue;
+        }
+        
+        // Detectar números de diploma (2-5 dígitos que no sean el documento)
+        const numeroLimpio = cellValue.replace(/[^0-9]/g, '');
+        if (numeroLimpio.length >= 2 && numeroLimpio.length <= 5 && 
+            numeroLimpio !== normalizedTarget) {
+          rowData['NUMERO DE DIPLOMA'] = cellValue;
+        }
+      }
+      
+      return rowData;
+    }
+  }
+  
+  return null;
+}
+
 // Endpoint de búsqueda directa que busca en ambas hojas por separado
 app.get('/api/search-direct', async (req, res) => {
   try {
-    const cedula = req.query.id || req.query.cedula;
+    const { id } = req.query;
     
-    if (!cedula || cedula.trim() === '') {
+    if (!id) {
       return res.status(400).json({
         success: false,
-        message: 'El número de cédula es requerido'
+        message: 'Se requiere el parámetro id'
       });
     }
     
-    const cedulaNormalizada = cedula.toString().replace(/[^0-9]/g, '').trim();
+    const cedulaNormalizada = id.toString().replace(/[^0-9]/g, '').trim();
     
-    // URLs de ambas hojas
-    const gvizTecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1426995834`;
-    const gvizBachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
+    if (cedulaNormalizada.length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'El número de documento debe tener al menos 5 dígitos'
+      });
+    }
     
-    console.log('Búsqueda directa para cédula:', cedulaNormalizada);
+    const gvizTecnicosUrl = `https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=1426995834`;
+    const gvizBachilleresUrl = `https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=0`;
     
-    // Buscar en técnicos
+    // Buscar en técnicos usando búsqueda directa
     let diploma = null;
     let tipoEncontrado = null;
     
@@ -519,42 +574,30 @@ app.get('/api/search-direct', async (req, res) => {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)' }
       }).then(response => response.text());
       
-      const tecnicosValues = parseCSV(tecnicosResponse);
-      const tecnicosData = processSheetData(tecnicosValues, 'Técnico');
-      
-      diploma = tecnicosData.find(row => {
-        const identificacion = row['TÉCNICOS LABORAL NÚMERO'] || row['NUMERO DE DOCUMENTO'] || '';
-        const idNormalizada = identificacion.toString().replace(/[^0-9]/g, '').trim();
-        return idNormalizada === cedulaNormalizada;
-      });
+      diploma = searchDirectInCSV(tecnicosResponse, cedulaNormalizada);
       
       if (diploma) {
+        diploma['Tipo_Grado'] = 'Técnico';
         tipoEncontrado = 'Técnicos';
-        console.log('Diploma encontrado en técnicos');
+        console.log('Diploma encontrado en técnicos con búsqueda directa');
       }
     } catch (error) {
       console.log('Error buscando en técnicos:', error.message);
     }
     
-    // Si no se encontró en técnicos, buscar en bachilleres
+    // Si no se encontró en técnicos, buscar en bachilleres usando búsqueda directa
     if (!diploma) {
       try {
         const bachilleresResponse = await fetch(gvizBachilleresUrl, {
           headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)' }
         }).then(response => response.text());
         
-        const bachilleresValues = parseCSV(bachilleresResponse);
-        const bachilleresData = processSheetData(bachilleresValues, 'Bachiller');
-        
-        diploma = bachilleresData.find(row => {
-          const identificacion = row['BACHILLERES NUMERO DE D'] || row['NUMERO DE DOCUMENTO'] || '';
-          const idNormalizada = identificacion.toString().replace(/[^0-9]/g, '').trim();
-          return idNormalizada === cedulaNormalizada;
-        });
+        diploma = searchDirectInCSV(bachilleresResponse, cedulaNormalizada);
         
         if (diploma) {
+          diploma['Tipo_Grado'] = 'Bachiller';
           tipoEncontrado = 'Bachilleres';
-          console.log('Diploma encontrado en bachilleres');
+          console.log('Diploma encontrado en bachilleres con búsqueda directa');
         }
       } catch (error) {
         console.log('Error buscando en bachilleres:', error.message);
