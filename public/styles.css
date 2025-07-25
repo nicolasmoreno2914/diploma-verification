@@ -136,6 +136,32 @@ body {
     line-height: 1;
 }
 
+/* Logo Inandina recreado con CSS */
+.logo-inandina {
+    display: flex;
+    align-items: center;
+    font-family: 'Arial', sans-serif;
+    height: 40px;
+}
+
+.logo-text-blue {
+    color: var(--inandina-blue);
+    font-weight: 700;
+    font-size: 1.8rem;
+    letter-spacing: -1px;
+    margin-right: -2px;
+}
+
+.logo-box-green {
+    background-color: var(--inandina-green);
+    color: white;
+    font-weight: 700;
+    font-size: 1.8rem;
+    padding: 2px 8px;
+    margin-left: -2px;
+    border-radius: 3px;
+}
+
 /* Efectos hover para el logo */
 .navbar-brand:hover {
     text-decoration: none;
@@ -143,12 +169,16 @@ body {
     transition: all 0.3s ease;
 }
 
-.navbar-brand img {
+.logo-inandina {
     transition: all 0.3s ease;
 }
 
-.navbar-brand:hover img {
+.navbar-brand:hover .logo-inandina {
     transform: scale(1.05);
+}
+
+.navbar-brand:hover .logo-box-green {
+    background-color: var(--inandina-light-green);
 }
 
 .bg-success {
