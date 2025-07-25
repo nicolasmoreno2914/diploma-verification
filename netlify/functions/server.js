@@ -144,11 +144,11 @@ function processSheetData(values, tipoGrado) {
 // Función para leer datos de Google Sheets - Lee TODOS los registros sin limitaciones
 async function readGoogleSheetsData() {
   try {
-    // URLs que funcionan correctamente para acceder a TODOS los registros
+    // URLs que funcionan correctamente en Netlify deployment
     // GID correcto para egresados tecnicos: 1426995834 (hoja con 2000+ registros)
-    // Usando gviz/tq que permite acceso completo sin limitaciones
-    const tecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1426995834`;
-    const bachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
+    // GID correcto para egresados bachilleres: 0
+    const tecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=1426995834`;
+    const bachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=0`;
     
     console.log('Leyendo datos completos de Google Sheets...');
     
