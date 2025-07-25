@@ -359,20 +359,35 @@ app.get('/api/statistics', async (req, res) => {
   }
 });
 
-// Ruta de debug temporal para ver estructura de datos
+// Endpoint de debug temporal para inspeccionar datos
 app.get('/api/debug', async (req, res) => {
   try {
-    const data = await readGoogleSheetsData();
+    const diplomasData = await readGoogleSheetsData();
+    
+    const sampleData = diplomasData.slice(0, 3);
+    const availableColumns = diplomasData.length > 0 ? Object.keys(diplomasData[0]) : [];
+    
+    // Separar por tipo de grado para debug
+    const tecnicos = diplomasData.filter(d => d.Tipo_Grado === 'Técnico');
+    const bachilleres = diplomasData.filter(d => d.Tipo_Grado === 'Bachiller');
     
     res.json({
       success: true,
       message: 'Debug data from Google Sheets',
-      total_records: data.length,
-      sample_data: data.slice(0, 3), // Primeros 3 registros
-      available_columns: data.length > 0 ? Object.keys(data[0]) : []
+      total_records: diplomasData.length,
+      tecnicos_count: tecnicos.length,
+      bachilleres_count: bachilleres.length,
+      sample_data: sampleData,
+      available_columns: availableColumns,
+      sample_tecnicos: tecnicos.slice(0, 2),
+      sample_bachilleres: bachilleres.slice(0, 2)
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error en debug', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Error en debug',
+      error: error.message
+    });
   }
 });
 
