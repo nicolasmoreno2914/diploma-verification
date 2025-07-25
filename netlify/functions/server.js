@@ -817,4 +817,57 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+// Endpoint de debug completo para búsqueda directa
+app.get('/api/debug-direct-search', async (req, res) => {
+  try {
+    const targetCedula = '1123114905';
+    const cedulaNormalizada = targetCedula.replace(/[^0-9]/g, '').trim();
+    
+    const gvizTecnicosUrl = `https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=1426995834`;
+    
+    const tecnicosResponse = await fetch(gvizTecnicosUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)' }
+    }).then(response => response.text());
+    
+    const lines = tecnicosResponse.split('\n');
+    
+    // Buscar líneas que contengan la cédula
+    const matchingLines = lines.filter(line => line.includes(targetCedula));
+    
+    // Probar la función searchDirectInCSV
+    const directSearchResult = searchDirectInCSV(tecnicosResponse, cedulaNormalizada);
+    
+    // Analizar estructura de líneas
+    const sampleLines = lines.slice(0, 20).map((line, index) => ({
+      line_number: index + 1,
+      content: line,
+      contains_target: line.includes(targetCedula)
+    }));
+    
+    res.json({
+      success: true,
+      message: 'Debug completo de búsqueda directa',
+      data: {
+        target_cedula: targetCedula,
+        cedula_normalizada: cedulaNormalizada,
+        total_lines: lines.length,
+        data_length: tecnicosResponse.length,
+        matching_lines_count: matchingLines.length,
+        matching_lines: matchingLines,
+        direct_search_result: directSearchResult,
+        direct_search_found: !!directSearchResult,
+        sample_lines: sampleLines,
+        first_line: lines[0],
+        last_line: lines[lines.length - 1]
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error en debug de búsqueda directa',
+      error: error.message
+    });
+  }
+});
+
 module.exports.handler = serverless(app);
