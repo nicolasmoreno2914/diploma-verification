@@ -650,6 +650,74 @@ app.get('/api/debug-headers', async (req, res) => {
   }
 });
 
+// Endpoint para análisis línea por línea de técnicos
+app.get('/api/raw-tecnicos-search', async (req, res) => {
+  try {
+    const targetId = '1123114905';
+    const gvizTecnicosUrl = `https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=1426995834`;
+    
+    const tecnicosResponse = await fetch(gvizTecnicosUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)' }
+    }).then(response => response.text());
+    
+    const lines = tecnicosResponse.split('\n');
+    const foundLines = [];
+    
+    // Buscar la cédula en cada línea
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.includes(targetId)) {
+        const parsedLine = parseCSV(line + '\n')[0] || [];
+        foundLines.push({
+          line_number: i,
+          raw_content: line,
+          parsed_cells: parsedLine,
+          cell_count: parsedLine.length
+        });
+      }
+    }
+    
+    // También buscar líneas que contengan números similares
+    const similarLines = [];
+    for (let i = 0; i < Math.min(lines.length, 100); i++) {
+      const line = lines[i];
+      // Buscar cualquier número de 10 dígitos que empiece con 112
+      if (/112\d{7}/.test(line)) {
+        const parsedLine = parseCSV(line + '\n')[0] || [];
+        similarLines.push({
+          line_number: i,
+          raw_content: line.substring(0, 200) + (line.length > 200 ? '...' : ''),
+          parsed_cells: parsedLine.slice(0, 10), // Solo primeras 10 columnas
+          matches_target: line.includes(targetId)
+        });
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Búsqueda de cédula ${targetId} en técnicos`,
+      target_id: targetId,
+      total_lines: lines.length,
+      exact_matches: foundLines,
+      exact_match_count: foundLines.length,
+      similar_patterns: similarLines,
+      similar_pattern_count: similarLines.length,
+      first_10_lines_sample: lines.slice(0, 10).map((line, index) => ({
+        line_number: index,
+        content: line.substring(0, 100) + (line.length > 100 ? '...' : '')
+      }))
+    });
+    
+  } catch (error) {
+    console.error('Error en búsqueda raw de técnicos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en búsqueda raw de técnicos',
+      error: error.message
+    });
+  }
+});
+
 // Ruta de estadísticas
 app.get('/api/stats', async (req, res) => {
   try {
