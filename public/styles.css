@@ -136,52 +136,23 @@ body {
     line-height: 1;
 }
 
-/* Logo Inandina recreado con CSS */
-.logo-inandina {
-    display: flex;
-    align-items: center;
-    font-family: 'Arial Black', 'Arial', sans-serif;
-    height: 40px;
-    font-weight: 900;
-}
+/* Logo Inandina SVG optimizado */
 
-.logo-text-blue {
-    color: var(--inandina-blue);
-    font-weight: 900;
-    font-size: 2rem;
-    letter-spacing: -0.5px;
-    margin-right: 0;
-}
-
-.logo-box-green {
-    background-color: var(--inandina-green);
-    color: white;
-    font-weight: 900;
-    font-size: 2rem;
-    padding: 4px 8px;
-    margin-left: 0;
-    border-radius: 4px;
-    display: inline-block;
-    line-height: 1;
-}
-
-/* Efectos hover para el logo */
+/* Efectos hover para el logo SVG */
 .navbar-brand:hover {
     text-decoration: none;
     transform: translateY(-1px);
     transition: all 0.3s ease;
 }
 
-.logo-inandina {
+.navbar-brand img {
     transition: all 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 
-.navbar-brand:hover .logo-inandina {
+.navbar-brand:hover img {
     transform: scale(1.05);
-}
-
-.navbar-brand:hover .logo-box-green {
-    background-color: var(--inandina-light-green);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
 }
 
 .bg-success {

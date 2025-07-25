@@ -1,0 +1,19 @@
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- Logo Inandina exacto -->
+  <defs>
+    <style>
+      .logo-text { font-family: Arial, sans-serif; font-weight: bold; font-size: 32px; fill: #2E4A6B; }
+      .logo-box { fill: #8BC34A; }
+      .logo-box-text { font-family: Arial, sans-serif; font-weight: bold; font-size: 32px; fill: white; }
+    </style>
+  </defs>
+  
+  <!-- Texto "Inandin" en azul -->
+  <text x="10" y="40" class="logo-text">Inandin</text>
+  
+  <!-- Caja verde para la "a" -->
+  <rect x="150" y="15" width="35" height="35" class="logo-box" rx="3"/>
+  
+  <!-- Letra "a" en blanco dentro de la caja verde -->
+  <text x="160" y="40" class="logo-box-text">a</text>
+</svg>
