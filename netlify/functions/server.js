@@ -510,7 +510,7 @@ app.get('/api/search-direct', async (req, res) => {
       const tecnicosData = processSheetData(tecnicosValues, 'Técnico');
       
       diploma = tecnicosData.find(row => {
-        const identificacion = row['NUMERO DE DOCUMENTO'] || '';
+        const identificacion = row['TÉCNICOS LABORAL NÚMERO'] || row['NUMERO DE DOCUMENTO'] || '';
         const idNormalizada = identificacion.toString().replace(/[^0-9]/g, '').trim();
         return idNormalizada === cedulaNormalizada;
       });
@@ -534,7 +534,7 @@ app.get('/api/search-direct', async (req, res) => {
         const bachilleresData = processSheetData(bachilleresValues, 'Bachiller');
         
         diploma = bachilleresData.find(row => {
-          const identificacion = row['NUMERO DE DOCUMENTO'] || '';
+          const identificacion = row['BACHILLERES NUMERO DE D'] || row['NUMERO DE DOCUMENTO'] || '';
           const idNormalizada = identificacion.toString().replace(/[^0-9]/g, '').trim();
           return idNormalizada === cedulaNormalizada;
         });
@@ -565,7 +565,7 @@ app.get('/api/search-direct', async (req, res) => {
       found_in: tipoEncontrado,
       data: {
         nombre_completo: diploma['NOMBRES Y APELLIDOS'] || 'No disponible',
-        numero_documento: diploma['NUMERO DE DOCUMENTO'],
+        numero_documento: diploma['TÉCNICOS LABORAL NÚMERO'] || diploma['BACHILLERES NUMERO DE D'] || diploma['NUMERO DE DOCUMENTO'],
         fecha_graduacion: fechaGraduacion,
         codigo_verificacion: numeroDiploma,
         tipo_grado: diploma['Tipo_Grado'] || 'No disponible',
