@@ -354,12 +354,21 @@
             
             // Función para mostrar información del diploma
             function displayDiplomaInfo(diplomaInfo) {
-                document.getElementById('studentName').textContent = diplomaInfo.nombres;
-                document.getElementById('graduationDate').textContent = diplomaInfo.fechaGraduacion;
-                document.getElementById('verificationCode').textContent = diplomaInfo.codigoVerificacion;
-                document.getElementById('diplomaType').textContent = diplomaInfo.tipo;
-                document.getElementById('institution').textContent = diplomaInfo.institucion;
-                document.getElementById('city').textContent = diplomaInfo.ciudad;
+                const diplomaDiv = document.getElementById('diplomaInfo');
+                diplomaDiv.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-user me-2"></i>Estudiante:</strong><br>${diplomaInfo.nombres}</p>
+                            <p><strong><i class="fas fa-calendar me-2"></i>Fecha de Graduación:</strong><br>${diplomaInfo.fechaGraduacion}</p>
+                            <p><strong><i class="fas fa-certificate me-2"></i>Código de Verificación:</strong><br>${diplomaInfo.codigoVerificacion}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-graduation-cap me-2"></i>Tipo:</strong><br>${diplomaInfo.tipo}</p>
+                            <p><strong><i class="fas fa-university me-2"></i>Institución:</strong><br>${diplomaInfo.institucion}</p>
+                            <p><strong><i class="fas fa-map-marker-alt me-2"></i>Ciudad:</strong><br>Villavicencio</p>
+                        </div>
+                    </div>
+                `;
                 showResults();
             }
             
