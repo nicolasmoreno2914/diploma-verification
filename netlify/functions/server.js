@@ -284,67 +284,99 @@ async function readGoogleSheetsData() {
 // Ruta para verificar diploma
 app.get('/api/verify-diploma', async (req, res) => {
   try {
-    const cedula = req.query.id || req.query.cedula;
+    const { id } = req.query;
     
-    if (!cedula || cedula.trim() === '') {
+    if (!id) {
       return res.status(400).json({
         success: false,
-        message: 'El número de cédula es requerido'
+        message: 'Se requiere el parámetro id'
       });
     }
     
-    const diplomasData = await readGoogleSheetsData();
+    const cedulaNormalizada = id.toString().replace(/[^0-9]/g, '').trim();
     
-    const diploma = diplomasData.find(row => {
-      const identificacion = row['NUMERO DE DOCUMENTO'] || row['Numero de Documento'] || 
-                            row['Cédula'] || row['Cedula'] || row['Identificación'] || 
-                            row['Identificacion'] || row['ID'] || row['Numero de Identificacion'] ||
-                            row['Número de Identificación'] || row['CEDULA'] || row['cedula'] || '';
+    if (cedulaNormalizada.length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'El número de documento debe tener al menos 5 dígitos'
+      });
+    }
+    
+    console.log('Verificando diploma con búsqueda directa para ID:', cedulaNormalizada);
+    
+    const gvizTecnicosUrl = `https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=1426995834`;
+    const gvizBachilleresUrl = `https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=0`;
+    
+    // Buscar en técnicos usando búsqueda directa
+    let diploma = null;
+    let tipoEncontrado = null;
+    
+    try {
+      const tecnicosResponse = await fetch(gvizTecnicosUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)' }
+      }).then(response => response.text());
       
-      return identificacion && identificacion.toString().trim() === cedula.trim();
-    });
-
+      diploma = searchDirectInCSV(tecnicosResponse, cedulaNormalizada);
+      
+      if (diploma) {
+        diploma['Tipo_Grado'] = 'Técnico';
+        tipoEncontrado = 'Técnicos';
+        console.log('Diploma encontrado en técnicos con búsqueda directa');
+      }
+    } catch (error) {
+      console.log('Error buscando en técnicos:', error.message);
+    }
+    
+    // Si no se encontró en técnicos, buscar en bachilleres
+    if (!diploma) {
+      try {
+        const bachilleresResponse = await fetch(gvizBachilleresUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)' }
+        }).then(response => response.text());
+        
+        diploma = searchDirectInCSV(bachilleresResponse, cedulaNormalizada);
+        
+        if (diploma) {
+          diploma['Tipo_Grado'] = 'Bachiller';
+          tipoEncontrado = 'Bachilleres';
+          console.log('Diploma encontrado en bachilleres con búsqueda directa');
+        }
+      } catch (error) {
+        console.log('Error buscando en bachilleres:', error.message);
+      }
+    }
+    
     if (!diploma) {
       return res.status(404).json({
         success: false,
         message: 'No se encontró ningún diploma registrado para esta cédula'
       });
     }
-
+    
+    // Formatear la fecha de graduación
+    const fechaGraduacion = formatDate(diploma['FECHA DE GRADO'] || '');
+    const numeroDiploma = diploma['NUMERO DE DIPLOMA'] || 'No disponible';
+    
     res.json({
       success: true,
       message: 'Diploma encontrado exitosamente',
       data: {
-        estudiante: {
-          cedula: diploma['NUMERO DE DOCUMENTO'] || diploma['Numero de Documento'] || diploma['Cédula'] || diploma['Cedula'],
-          nombres: diploma['NOMBRES Y APELLIDOS'] || diploma['Nombres y Apellidos'] || diploma['Nombres'] || diploma['Nombre'],
-          apellidos: '',
-          email: diploma['Email'] || diploma['Correo'] || diploma['Correo Electrónico'],
-          telefono: diploma['Número Celular'] || diploma['Numero Celular'] || diploma['Teléfono'] || diploma['Telefono']
-        },
-        diploma: {
-          titulo: diploma['Tipo_Grado'] || 'No especificado',
-          programa_academico: diploma['ALIADO'] || diploma['Tipo_Grado'] || 'Programa Técnico',
-          fecha_graduacion: diploma['FECHA DE GRADO'] ? formatDate(diploma['FECHA DE GRADO']) : 'No especificada',
-          numero_diploma: diploma['NUMERO DE DIPLOMA'] || 'No especificado',
-          codigo_verificacion: diploma['NUMERO DE DIPLOMA'] || 'No especificado',
-          grado_academico: diploma['Tipo_Grado'] || 'No especificado',
-          modalidad: diploma['ALIADO'] ? diploma['ALIADO'] : 'Presencial',
-          fecha_emision: diploma['FECHA DE EMISIÓN'] || 'No especificada'
-        },
-        institucion: {
-          nombre: 'Inandina',
-          ciudad: 'Villavicencio',
-          pais: 'Colombia'
-        }
+        nombre_completo: diploma['NOMBRES Y APELLIDOS'] || 'No disponible',
+        numero_documento: diploma['NUMERO DE DOCUMENTO'],
+        fecha_graduacion: fechaGraduacion,
+        codigo_verificacion: numeroDiploma,
+        tipo_grado: diploma['Tipo_Grado'] || 'No disponible',
+        institucion: 'Inandina',
+        ciudad: 'Villavicencio'
       }
     });
     
   } catch (error) {
-    console.error('Error en verificación:', error);
+    console.error('Error en verificación de diploma:', error);
     res.status(500).json({
       success: false,
-      message: 'Error interno del servidor'
+      message: 'Error interno del servidor',
+      error: error.message
     });
   }
 });
