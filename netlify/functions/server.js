@@ -254,26 +254,24 @@ app.get('/api/verify-diploma', async (req, res) => {
   }
 });
 
-// Ruta para obtener estadísticas reales del sistema
+// Endpoint para obtener estadísticas del sistema - Valores fijos según solicitud del usuario
 app.get('/api/statistics', async (req, res) => {
   try {
-    const diplomasData = await readGoogleSheetsData();
-    const totalDiplomas = diplomasData.length;
-    
+    // Valores fijos: 751 bachilleres + 2048 técnicos = 2799, redondeado a 2794 según solicitud
     res.json({
       success: true,
       message: 'Estadísticas del sistema obtenidas exitosamente',
       data: {
-        diplomas_registrados: totalDiplomas,
-        estudiantes: totalDiplomas, // Cada diploma corresponde a un estudiante
-        instituciones: 1 // Solo Inandina
+        diplomas_registrados: 2794,
+        estudiantes: 2794, // Cada diploma representa un estudiante
+        instituciones: 1 // Solo INANDINA
       }
     });
   } catch (error) {
-    console.error('Error obteniendo estadísticas:', error);
+    console.error('Error al obtener estadísticas:', error);
     res.status(500).json({
       success: false,
-      message: 'Error obteniendo estadísticas del sistema',
+      message: 'Error al obtener estadísticas del sistema',
       error: error.message
     });
   }
