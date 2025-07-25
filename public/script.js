@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Realizar petición a la API
             const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                 ? `/api/verify-diploma?id=${encodeURIComponent(cedula)}`
-                : `/.netlify/functions/server/api/verify-diploma?id=${encodeURIComponent(cedula)}`;
+                : `/.netlify/functions/verify-diploma?id=${encodeURIComponent(cedula)}`;
             
             const response = await fetch(apiUrl, {
                 method: 'GET',
@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                 ? '/api/statistics'
-                : '/.netlify/functions/server/api/statistics';
+                : '/.netlify/functions/statistics';
             
             const response = await fetch(apiUrl);
             const data = await response.json();

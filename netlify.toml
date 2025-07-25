@@ -6,8 +6,13 @@
   NODE_VERSION = "18"
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/server"
+  from = "/api/verify-diploma"
+  to = "/.netlify/functions/verify-diploma"
+  status = 200
+
+[[redirects]]
+  from = "/api/statistics"
+  to = "/.netlify/functions/statistics"
   status = 200
 
 [[redirects]]
