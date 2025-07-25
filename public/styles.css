@@ -1,13 +1,23 @@
-/* Estilos personalizados para el Sistema de Verificación de Diplomas */
+/* Estilos personalizados para el Sistema de Verificación de Diplomas - Identidad Inandina */
+
+:root {
+    --inandina-green: #8BC34A;
+    --inandina-blue: #2E4A6B;
+    --inandina-white: #FFFFFF;
+    --inandina-gray: #F5F5F5;
+    --inandina-dark-blue: #1E3A4F;
+    --inandina-light-green: #A5D65A;
+}
 
 body {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--inandina-blue) 0%, var(--inandina-dark-blue) 100%);
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
 }
 
 .bg-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--inandina-green) 0%, var(--inandina-light-green) 100%);
 }
 
 .card {
@@ -28,13 +38,14 @@ body {
 
 .form-control {
     border-radius: 10px;
-    border: 2px solid #e9ecef;
+    border: 2px solid var(--inandina-gray);
     transition: all 0.3s ease;
+    background-color: var(--inandina-white);
 }
 
 .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    border-color: var(--inandina-green);
+    box-shadow: 0 0 0 0.2rem rgba(139, 195, 74, 0.25);
     transform: translateY(-2px);
 }
 
@@ -44,6 +55,18 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--inandina-green) 0%, var(--inandina-light-green) 100%);
+    border: none;
+    color: var(--inandina-white);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--inandina-light-green) 0%, var(--inandina-green) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(139, 195, 74, 0.4);
 }
 
 .btn:hover {
@@ -75,20 +98,85 @@ body {
 .info-section {
     margin-bottom: 20px;
     padding: 15px;
-    background: white;
+    background: var(--inandina-white);
     border-radius: 8px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--inandina-green);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .info-label {
     font-weight: 600;
-    color: #495057;
+    color: var(--inandina-blue);
     margin-bottom: 5px;
 }
 
+/* Estilos específicos de Inandina */
+.navbar-dark {
+    background: linear-gradient(135deg, var(--inandina-blue) 0%, var(--inandina-dark-blue) 100%) !important;
+}
+
+.bg-success {
+    background: linear-gradient(135deg, var(--inandina-green) 0%, var(--inandina-light-green) 100%) !important;
+}
+
+.bg-danger {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+}
+
+.card {
+    background: var(--inandina-white);
+    box-shadow: 0 4px 20px rgba(46, 74, 107, 0.1);
+}
+
+.text-primary {
+    color: var(--inandina-green) !important;
+}
+
+.text-success {
+    color: var(--inandina-green) !important;
+}
+
+.text-info {
+    color: var(--inandina-blue) !important;
+}
+
+.spinner-border {
+    color: var(--inandina-green) !important;
+}
+
 .info-value {
-    color: #212529;
+    color: var(--inandina-dark-blue);
     font-size: 1.1rem;
+}
+
+/* Efectos adicionales para identidad Inandina */
+.navbar-brand {
+    color: var(--inandina-white) !important;
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+.stat-item h4 {
+    color: var(--inandina-blue);
+    font-weight: 700;
+}
+
+.diploma-info {
+    background: linear-gradient(135deg, var(--inandina-gray) 0%, var(--inandina-white) 100%);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 10px 0;
+    border: 1px solid rgba(139, 195, 74, 0.2);
+}
+
+/* Animaciones suaves */
+.card, .btn, .form-control {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Footer con colores Inandina */
+.bg-dark {
+    background: linear-gradient(135deg, var(--inandina-dark-blue) 0%, var(--inandina-blue) 100%) !important;
 }
 
 .verification-badge {
