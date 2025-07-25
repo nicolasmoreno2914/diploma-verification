@@ -1,52 +1,56 @@
-// Sistema de Verificación de Diplomas - Frontend JavaScript
+// Sistema de Verificación de Diplomas - Solución Cliente Completa
 
 document.addEventListener('DOMContentLoaded', function() {
     // Elementos del DOM
     const form = document.getElementById('verificationForm');
     const cedulaInput = document.getElementById('cedula');
-    const searchBtn = document.getElementById('searchBtn');
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    const resultsCard = document.getElementById('resultsCard');
-    const errorCard = document.getElementById('errorCard');
-    const diplomaInfo = document.getElementById('diplomaInfo');
+    const loadingDiv = document.getElementById('loading');
+    const resultsDiv = document.getElementById('results');
+    const errorDiv = document.getElementById('error');
     const errorMessage = document.getElementById('errorMessage');
-
-    // Cargar estadísticas al inicializar
+    
+    // Cargar estadísticas fijas
     loadStatistics();
-
-    // Validación en tiempo real del input de cédula
-    cedulaInput.addEventListener('input', function(e) {
-        // Solo permitir números
-        e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        
-        // Validar longitud
-        if (e.target.value.length > 15) {
-            e.target.value = e.target.value.slice(0, 15);
-        }
-    });
-
-    // Manejar envío del formulario
+    
+    // Event listener para el formulario
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const cedula = cedulaInput.value.trim();
         
-        // Validaciones
         if (!cedula) {
             showError('Por favor ingrese un número de cédula válido');
             return;
         }
-
+        
+        // Validar que solo contenga números
+        if (!/^[0-9]+$/.test(cedula)) {
+            showError('El número de cédula debe contener solo números');
+            return;
+        }
+        
+        // Validar longitud mínima
         if (cedula.length < 6) {
             showError('El número de cédula debe tener al menos 6 dígitos');
             return;
         }
-
-        // Realizar búsqueda
+        
         searchDiploma(cedula);
     });
+    
+    // Event listener para limpiar errores cuando el usuario escriba
+    cedulaInput.addEventListener('input', function() {
+        hideError();
+    });
+    
+    // Event listener para el botón de nueva búsqueda
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'newSearchButton') {
+            newSearch();
+        }
+    });
 
-    // Función para buscar diploma
+    // Función para buscar diploma directamente en Google Sheets
     async function searchDiploma(cedula) {
         try {
             // Mostrar loading
@@ -54,30 +58,44 @@ document.addEventListener('DOMContentLoaded', function() {
             hideResults();
             hideError();
 
-            // Realizar petición a la API
-            const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                ? `/api/verify-diploma?id=${encodeURIComponent(cedula)}`
-                : `/.netlify/functions/verify-diploma?id=${encodeURIComponent(cedula)}`;
+            const cedulaNormalizada = cedula.replace(/[^0-9]/g, '').trim();
             
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
+            // URLs directas de Google Sheets
+            const gvizTecnicosUrl = `https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=1426995834`;
+            const gvizBachilleresUrl = `https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=0`;
+            
+            let diploma = null;
+            
+            // Buscar en técnicos
+            try {
+                const tecnicosResponse = await fetch(gvizTecnicosUrl);
+                const tecnicosText = await tecnicosResponse.text();
+                diploma = searchDirectInCSV(tecnicosText, cedulaNormalizada, 'Técnico');
+            } catch (error) {
+                console.log('Error buscando en técnicos:', error);
+            }
+            
+            // Si no se encontró en técnicos, buscar en bachilleres
+            if (!diploma) {
+                try {
+                    const bachilleresResponse = await fetch(gvizBachilleresUrl);
+                    const bachilleresText = await bachilleresResponse.text();
+                    diploma = searchDirectInCSV(bachilleresText, cedulaNormalizada, 'Bachiller');
+                } catch (error) {
+                    console.log('Error buscando en bachilleres:', error);
                 }
-            });
-
-            const data = await response.json();
-
+            }
+            
             // Ocultar loading
             hideLoading();
 
-            if (data.success) {
+            if (diploma) {
                 // Mostrar resultados
-                displayDiplomaInfo(data.data);
+                displayDiplomaInfo(diploma);
                 showResults();
             } else {
                 // Mostrar error
-                showError(data.message || 'No se encontró información para esta cédula');
+                showError('No se encontró información para esta cédula');
             }
 
         } catch (error) {
@@ -86,11 +104,64 @@ document.addEventListener('DOMContentLoaded', function() {
             showError('Error de conexión. Por favor intente de nuevo más tarde.');
         }
     }
+    
+    // Función para buscar directamente en CSV
+    function searchDirectInCSV(csvText, targetId, tipo) {
+        const lines = csvText.split('\n');
+        const normalizedTarget = targetId.toString().replace(/[^0-9]/g, '');
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (line.includes(normalizedTarget)) {
+                // Parsear la línea encontrada
+                const cells = parseCSVLine(line);
+                
+                // Mapeo basado en la estructura del CSV
+                const rowData = {
+                    numero_documento: cells[2] ? cells[2].toString().trim() : normalizedTarget,
+                    nombre_completo: cells[1] ? cells[1].toString().trim() : '',
+                    fecha_graduacion: cells[3] ? formatDate(cells[3].toString().trim()) : '',
+                    codigo_verificacion: cells[5] ? cells[5].toString().trim() : '',
+                    tipo_grado: tipo,
+                    institucion: 'Inandina',
+                    ciudad: 'Villavicencio'
+                };
+                
+                // Verificar que encontramos el documento correcto
+                const documentoEncontrado = rowData.numero_documento.replace(/[^0-9]/g, '');
+                if (documentoEncontrado === normalizedTarget) {
+                    return rowData;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    // Función para parsear una línea CSV
+    function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current.trim());
+        return result;
+    }
 
     // Función para mostrar información del diploma
     function displayDiplomaInfo(data) {
-        const { estudiante, diploma, institucion } = data;
-        
+        const diplomaInfo = document.getElementById('diplomaInfo');
         diplomaInfo.innerHTML = `
             <div class="diploma-info fade-in">
                 <!-- Información del Estudiante -->
@@ -100,21 +171,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         Información del Graduado
                     </h5>
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-label">Nombres:</div>
-                            <div class="info-value">${estudiante.nombres}</div>
+                        <div class="col-md-12 mb-2">
+                            <div class="info-label">Nombre Completo:</div>
+                            <div class="info-value fw-bold">${data.nombre_completo}</div>
                         </div>
                         <div class="col-md-6">
-                            <div class="info-label">Apellidos:</div>
-                            <div class="info-value">${estudiante.apellidos}</div>
+                            <div class="info-label">Número de Documento:</div>
+                            <div class="info-value">${data.numero_documento}</div>
                         </div>
-                        <div class="col-md-6 mt-2">
-                            <div class="info-label">Cédula:</div>
-                            <div class="info-value">${estudiante.cedula}</div>
-                        </div>
-                        <div class="col-md-6 mt-2">
-                            <div class="info-label">Email:</div>
-                            <div class="info-value">${estudiante.email}</div>
+                        <div class="col-md-6">
+                            <div class="info-label">Tipo de Graduación:</div>
+                            <div class="info-value">${data.tipo_grado}</div>
                         </div>
                     </div>
                 </div>
@@ -126,52 +193,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         Información del Diploma
                     </h5>
                     <div class="row">
-                        <div class="col-md-12 mb-2">
-                            <div class="info-label">Título Otorgado:</div>
-                            <div class="info-value fw-bold">${diploma.titulo}</div>
-                        </div>
-                        <div class="col-md-12 mb-2">
-                            <div class="info-label">Programa Académico:</div>
-                            <div class="info-value">${diploma.programa_academico}</div>
-                        </div>
                         <div class="col-md-6">
                             <div class="info-label">Fecha de Graduación:</div>
-                            <div class="info-value">${diploma.fecha_graduacion}</div>
+                            <div class="info-value">${data.fecha_graduacion}</div>
                         </div>
                         <div class="col-md-6">
-                            <div class="info-label">Número de Diploma:</div>
-                            <div class="info-value">${diploma.numero_diploma}</div>
-                        </div>
-                        <div class="col-md-12 mt-2">
                             <div class="info-label">Código de Verificación:</div>
-                            <div class="info-value">
-                                <span class="verification-badge">
-                                    <i class="fas fa-shield-alt me-1"></i>
-                                    ${diploma.codigo_verificacion}
-                                </span>
-                            </div>
+                            <div class="info-value fw-bold text-success">${data.codigo_verificacion}</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Información de la Institución -->
+                <!-- Información Institucional -->
                 <div class="info-section">
                     <h5 class="text-info mb-3">
                         <i class="fas fa-university me-2"></i>
-                        Institución Educativa
+                        Información Institucional
                     </h5>
                     <div class="row">
-                        <div class="col-md-12 mb-2">
+                        <div class="col-md-6">
                             <div class="info-label">Institución:</div>
-                            <div class="info-value fw-bold">${institucion.nombre}</div>
+                            <div class="info-value">${data.institucion}</div>
                         </div>
                         <div class="col-md-6">
                             <div class="info-label">Ciudad:</div>
-                            <div class="info-value">${institucion.ciudad}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-label">País:</div>
-                            <div class="info-value">${institucion.pais}</div>
+                            <div class="info-value">${data.ciudad}</div>
                         </div>
                     </div>
                 </div>
@@ -184,76 +230,91 @@ document.addEventListener('DOMContentLoaded', function() {
                         Este diploma ha sido validado en nuestra base de datos oficial.
                     </div>
                 </div>
+
+                <!-- Botón para nueva búsqueda -->
+                <div class="text-center mt-3">
+                    <button type="button" class="btn btn-outline-primary" id="newSearchButton">
+                        <i class="fas fa-search me-2"></i>
+                        Nueva Búsqueda
+                    </button>
+                </div>
             </div>
         `;
     }
 
-    // Función para cargar estadísticas reales del sistema
-    async function loadStatistics() {
-        try {
-            const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                ? '/api/statistics'
-                : '/.netlify/functions/statistics';
-            
-            const response = await fetch(apiUrl);
-            const data = await response.json();
-
-            if (data.success) {
-                document.getElementById('totalDiplomas').textContent = data.data.diplomas_registrados.toLocaleString();
-                document.getElementById('totalEstudiantes').textContent = data.data.estudiantes.toLocaleString();
-                document.getElementById('totalInstituciones').textContent = data.data.instituciones;
-            }
-        } catch (error) {
-            console.error('Error cargando estadísticas:', error);
-            // Mostrar valores por defecto en caso de error
-            document.getElementById('totalDiplomas').textContent = '---';
-            document.getElementById('totalEstudiantes').textContent = '---';
-            document.getElementById('totalInstituciones').textContent = '---';
-        }
+    // Función para cargar estadísticas fijas
+    function loadStatistics() {
+        // Usar valores fijos según decisión del usuario
+        document.getElementById('diplomasCount').textContent = '2,794';
+        document.getElementById('studentsCount').textContent = '2,794';
+        document.getElementById('institutionsCount').textContent = '1';
     }
 
     // Funciones de utilidad para mostrar/ocultar elementos
     function showLoading() {
-        loadingSpinner.style.display = 'block';
-        searchBtn.disabled = true;
-        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Buscando...';
+        loadingDiv.style.display = 'block';
     }
 
     function hideLoading() {
-        loadingSpinner.style.display = 'none';
-        searchBtn.disabled = false;
-        searchBtn.innerHTML = '<i class="fas fa-search me-2"></i>Buscar Diploma';
+        loadingDiv.style.display = 'none';
     }
 
     function showResults() {
-        resultsCard.style.display = 'block';
-        resultsCard.classList.add('fade-in');
+        resultsDiv.style.display = 'block';
     }
 
     function hideResults() {
-        resultsCard.style.display = 'none';
-        resultsCard.classList.remove('fade-in');
+        resultsDiv.style.display = 'none';
     }
 
     function showError(message) {
         errorMessage.textContent = message;
-        errorCard.style.display = 'block';
-        errorCard.classList.add('fade-in');
+        errorDiv.style.display = 'block';
     }
 
     function hideError() {
-        errorCard.style.display = 'none';
-        errorCard.classList.remove('fade-in');
+        errorDiv.style.display = 'none';
     }
 
     // Función para formatear fechas
     function formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        if (!dateString) return 'No especificada';
+        
+        try {
+            // Si ya está en formato legible, devolverla tal como está
+            if (dateString.includes('de')) {
+                return dateString;
+            }
+            
+            // Intentar parsear diferentes formatos de fecha
+            let date;
+            if (dateString.includes('/')) {
+                const parts = dateString.split('/');
+                if (parts.length === 3) {
+                    // Formato DD/MM/YYYY o MM/DD/YYYY
+                    date = new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+            } else if (dateString.includes('-')) {
+                date = new Date(dateString);
+            }
+            
+            if (date && !isNaN(date.getTime())) {
+                const months = [
+                    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+                ];
+                
+                const day = date.getDate();
+                const month = months[date.getMonth()];
+                const year = date.getFullYear();
+                
+                return `${day} de ${month} de ${year}`;
+            }
+            
+            return dateString;
+        } catch (error) {
+            return dateString;
+        }
     }
 
     // Función para limpiar formulario
@@ -263,9 +324,9 @@ document.addEventListener('DOMContentLoaded', function() {
         hideError();
     }
 
-    // Agregar botón para nueva búsqueda
-    window.newSearch = function() {
+    // Función para nueva búsqueda
+    function newSearch() {
         clearForm();
         cedulaInput.focus();
-    };
+    }
 });
