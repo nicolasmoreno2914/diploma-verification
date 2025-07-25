@@ -280,23 +280,61 @@ app.get('/api/statistics', async (req, res) => {
 // Ruta de debug temporal para ver estructura de datos
 app.get('/api/debug', async (req, res) => {
   try {
-    const diplomasData = await readGoogleSheetsData();
-    const sampleData = diplomasData.slice(0, 2); // Solo los primeros 2 registros
+    const data = await readGoogleSheetsData();
     
     res.json({
       success: true,
       message: 'Debug data from Google Sheets',
-      total_records: diplomasData.length,
-      sample_data: sampleData,
-      available_columns: sampleData.length > 0 ? Object.keys(sampleData[0]) : []
+      total_records: data.length,
+      sample_data: data.slice(0, 3), // Primeros 3 registros
+      available_columns: data.length > 0 ? Object.keys(data[0]) : []
     });
   } catch (error) {
-    console.error('Error en debug:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error obteniendo datos de debug',
-      error: error.message
+    res.status(500).json({ success: false, message: 'Error en debug', error: error.message });
+  }
+});
+
+// Endpoint de prueba para verificar URLs directamente
+app.get('/api/test-urls', async (req, res) => {
+  try {
+    const tecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1426995834`;
+    const bachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
+    
+    console.log('Probando URLs directamente...');
+    console.log('URL técnicos:', tecnicosUrl);
+    console.log('URL bachilleres:', bachilleresUrl);
+    
+    const [tecnicosResponse, bachilleresResponse] = await Promise.all([
+      fetch(tecnicosUrl).then(response => {
+        console.log('Respuesta técnicos status:', response.status);
+        return response.text();
+      }),
+      fetch(bachilleresUrl).then(response => {
+        console.log('Respuesta bachilleres status:', response.status);
+        return response.text();
+      })
+    ]);
+    
+    console.log('Datos técnicos recibidos, tamaño:', tecnicosResponse.length);
+    console.log('Datos bachilleres recibidos, tamaño:', bachilleresResponse.length);
+    
+    res.json({
+      success: true,
+      message: 'Test de URLs completado',
+      tecnicos: {
+        url: tecnicosUrl,
+        data_length: tecnicosResponse.length,
+        first_100_chars: tecnicosResponse.substring(0, 100)
+      },
+      bachilleres: {
+        url: bachilleresUrl,
+        data_length: bachilleresResponse.length,
+        first_100_chars: bachilleresResponse.substring(0, 100)
+      }
     });
+  } catch (error) {
+    console.error('Error en test-urls:', error);
+    res.status(500).json({ success: false, message: 'Error en test de URLs', error: error.message });
   }
 });
 
