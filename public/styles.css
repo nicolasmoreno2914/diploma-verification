@@ -140,9 +140,8 @@ body {
 
 /* Efectos hover para el logo SVG */
 .navbar-brand:hover {
-    text-decoration: none;
-    transform: translateY(-1px);
-    transition: all 0.3s ease;
+    transform: scale(1.02);
+    transition: transform 0.3s ease;
 }
 
 .navbar-brand img {
@@ -293,4 +292,175 @@ footer {
     padding: 15px;
     border-radius: 8px;
     margin: 10px 0;
+}
+
+/* ===== OPTIMIZACIONES MÓVILES ===== */
+
+/* Media queries para dispositivos móviles */
+@media (max-width: 768px) {
+    /* Navbar móvil */
+    .navbar-brand {
+        flex-direction: column;
+        align-items: flex-start !important;
+        text-align: left;
+    }
+    
+    .navbar-brand img {
+        height: 30px !important;
+        margin-bottom: 5px;
+        margin-right: 0 !important;
+    }
+    
+    .brand-title {
+        font-size: 1rem !important;
+        line-height: 1.2;
+        margin-bottom: 2px;
+    }
+    
+    .brand-subtitle {
+        font-size: 0.8rem !important;
+        line-height: 1.1;
+    }
+    
+    /* Container principal */
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    /* Cards móviles */
+    .card {
+        margin-bottom: 20px;
+        border-radius: 12px;
+    }
+    
+    .card-body {
+        padding: 1.5rem !important;
+    }
+    
+    .card-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .card-header h3 {
+        font-size: 1.3rem !important;
+    }
+    
+    .card-header p {
+        font-size: 0.9rem !important;
+    }
+    
+    /* Formularios móviles */
+    .form-control-lg {
+        font-size: 1rem !important;
+        padding: 0.75rem 1rem;
+    }
+    
+    .btn-lg {
+        font-size: 1rem !important;
+        padding: 0.75rem 1.5rem;
+    }
+    
+    /* Resultados móviles */
+    .diploma-info {
+        padding: 1rem !important;
+    }
+    
+    .diploma-info h4 {
+        font-size: 1.2rem !important;
+    }
+    
+    .diploma-info p {
+        font-size: 0.9rem !important;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Estadísticas móviles */
+    .row .col-md-4 {
+        margin-bottom: 15px;
+    }
+    
+    .text-center h5 {
+        font-size: 1.1rem !important;
+    }
+    
+    .text-center .display-4 {
+        font-size: 2rem !important;
+    }
+    
+    /* Footer móvil */
+    footer {
+        padding: 1.5rem 0 !important;
+        font-size: 0.9rem;
+    }
+    
+    /* Espaciado móvil */
+    .mt-5 {
+        margin-top: 2rem !important;
+    }
+    
+    .mb-4 {
+        margin-bottom: 1.5rem !important;
+    }
+}
+
+/* Media queries para pantallas muy pequeñas (teléfonos en vertical) */
+@media (max-width: 480px) {
+    .navbar-brand img {
+        height: 25px !important;
+    }
+    
+    .brand-title {
+        font-size: 0.9rem !important;
+    }
+    
+    .brand-subtitle {
+        font-size: 0.75rem !important;
+    }
+    
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    .card-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .card-header h3 {
+        font-size: 1.1rem !important;
+    }
+    
+    .form-control-lg {
+        font-size: 0.95rem !important;
+        padding: 0.6rem 0.8rem;
+    }
+    
+    .btn-lg {
+        font-size: 0.95rem !important;
+        padding: 0.6rem 1.2rem;
+    }
+    
+    .text-center .display-4 {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* Mejoras generales para touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .form-control {
+        min-height: 44px;
+    }
+    
+    .card:hover {
+        transform: none;
+    }
+    
+    .form-control:focus {
+        transform: none;
+    }
 }
