@@ -243,6 +243,7 @@
                                     nameColumn = 1;  // NOMBRES Y APELLIDOS
                                     dateColumn = 3;  // FECHA DE GRADO  
                                     diplomaColumn = 5; // NÚMERO DE DIPLOMA
+                                    certificateColumn = 6; // CERTIFICADO RECIBIDO
                                 } else {
                                     // Para bachilleres: usar posiciones corregidas
                                     nameColumn = 1;  // NOMBRES Y APELLIDOS
@@ -257,13 +258,15 @@
                             const nombres = nameColumn !== -1 ? cells[nameColumn] : 'Nombre no disponible';
                             const fechaGrado = dateColumn !== -1 ? cells[dateColumn] : '';
                             const numeroDiploma = diplomaColumn !== -1 ? cells[diplomaColumn] : 'N/A';
+                            const certificado = (tipo === 'Técnico' && certificateColumn !== -1) ? cells[certificateColumn] : null;
                             
-                            console.log('Datos extraídos:', { nombres, fechaGrado, numeroDiploma });
+                            console.log('Datos extraídos:', { nombres, fechaGrado, numeroDiploma, certificado });
                             
                             return {
                                 nombres: nombres,
                                 fechaGraduacion: formatDate(fechaGrado),
                                 codigoVerificacion: numeroDiploma,
+                                certificadoRecibido: certificado,
                                 tipo: tipo,
                                 institucion: 'Inandina',
                                 ciudad: 'Villavicencio'
@@ -355,6 +358,11 @@
             // Función para mostrar información del diploma
             function displayDiplomaInfo(diplomaInfo) {
                 const diplomaDiv = document.getElementById('diplomaInfo');
+                
+                // Campo de certificado solo para técnicos
+                const certificateField = diplomaInfo.tipo === 'Técnico' && diplomaInfo.certificadoRecibido ? 
+                    `<p><strong><i class="fas fa-award me-2"></i>Certificado Recibido:</strong><br>${diplomaInfo.certificadoRecibido}</p>` : '';
+                
                 diplomaDiv.innerHTML = `
                     <div class="row">
                         <div class="col-md-6">
@@ -364,6 +372,7 @@
                         </div>
                         <div class="col-md-6">
                             <p><strong><i class="fas fa-graduation-cap me-2"></i>Tipo:</strong><br>${diplomaInfo.tipo}</p>
+                            ${certificateField}
                             <p><strong><i class="fas fa-university me-2"></i>Institución:</strong><br>${diplomaInfo.institucion}</p>
                             <p><strong><i class="fas fa-map-marker-alt me-2"></i>Ciudad:</strong><br>Villavicencio</p>
                         </div>
