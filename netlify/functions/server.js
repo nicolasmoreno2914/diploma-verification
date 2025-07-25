@@ -106,7 +106,9 @@ function processSheetData(values, tipoGrado) {
   
   for (let i = 0; i < Math.min(values.length, 10); i++) {
     const row = values[i];
-    if (row && row.some(cell => cell && cell.toString().includes('NUMERO DE DOCUMENTO'))) {
+    if (row && row.some(cell => cell && (cell.toString().includes('NUMERO DE DOCUMENTO') || 
+                                         cell.toString().includes('TÉCNICOS LABORAL NÚMERO') ||
+                                         cell.toString().includes('BACHILLERES NUMERO DE D')))) {
       headerRowIndex = i;
       headers = row.map(cell => cell ? cell.toString().trim() : '');
       break;
@@ -131,10 +133,23 @@ function processSheetData(values, tipoGrado) {
       }
     });
     
-    const numeroDocumento = rowData['NUMERO DE DOCUMENTO'];
+    // Buscar el número de documento en las diferentes columnas posibles
+    const numeroDocumento = rowData['NUMERO DE DOCUMENTO'] || 
+                           rowData['TÉCNICOS LABORAL NÚMERO'] || 
+                           rowData['BACHILLERES NUMERO DE D'] ||
+                           rowData['BACHILLERES NUMERO DE DOCUMENTO'] ||
+                           rowData['NUMERO DE CEDULA'] ||
+                           rowData['CEDULA'] ||
+                           '';
+    
     if (numeroDocumento && numeroDocumento.trim() !== '' && numeroDocumento.length >= 5) {
-      rowData['Tipo_Grado'] = tipoGrado;
-      processedData.push(rowData);
+      // Normalizar el número de documento (solo números)
+      const numeroLimpio = numeroDocumento.toString().replace(/[^0-9]/g, '');
+      if (numeroLimpio.length >= 5) {
+        rowData['NUMERO DE DOCUMENTO'] = numeroLimpio; // Normalizar la clave
+        rowData['Tipo_Grado'] = tipoGrado;
+        processedData.push(rowData);
+      }
     }
   }
   
