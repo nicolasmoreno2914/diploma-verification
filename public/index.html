@@ -7,6 +7,76 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
+    <style>
+    /* Estilos específicos del carrusel de diplomas */
+    .carousel {
+        margin-top: 1rem;
+        margin-bottom: 3rem;
+    }
+
+    .carousel-indicators {
+        bottom: -50px;
+    }
+
+    .carousel-indicators [data-bs-target] {
+        background-color: #28a745;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: none;
+        margin: 0 5px;
+        opacity: 0.5;
+    }
+
+    .carousel-indicators .active {
+        opacity: 1;
+    }
+
+    .carousel-control-prev,
+    .carousel-control-next {
+        width: 5%;
+        color: #28a745;
+    }
+
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+        background-color: #28a745;
+        border-radius: 50%;
+        padding: 20px;
+        filter: none;
+    }
+
+    .carousel-control-prev:hover,
+    .carousel-control-next:hover {
+        color: #20c997;
+    }
+
+    .diploma-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin: 0 auto;
+        max-width: 800px;
+    }
+
+    .diploma-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .diploma-card .card-header {
+        background: linear-gradient(45deg, #28a745, #20c997) !important;
+        border: none;
+        padding: 1.5rem;
+    }
+
+    .diploma-card .card-body {
+        padding: 2rem;
+        background: #fff;
+    }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -95,6 +165,10 @@
                         <p id="errorMessage" class="mb-0"></p>
                     </div>
                 </div>
+
+                <!-- Resultado de búsqueda con carrusel -->
+                <div id="diploma-result" style="display: none;" class="mt-4"></div>
+
             </div>
         </div>
 
@@ -179,38 +253,163 @@
                 }
             });
             
-            // Función principal de búsqueda
+            // Función para buscar TODOS los diplomas de una cédula en ambas hojas
+            async function searchAllInCSV(csvText, cedula, tipo) {
+                const lines = csvText.split('\n');
+                const diplomas = [];
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const columns = line.split('","').map(col => col.replace(/"/g, ''));
+                    
+                    let documentoCol, nombreCol, fechaCol, diplomaCol, certificadoCol;
+                    
+                    if (tipo === 'Técnico') {
+                        documentoCol = columns[2]; // Columna 3: TÉCNICOS LABORAL NÚMERO DE DOCUMENTO
+                        nombreCol = columns[1];    // Columna 2: NOMBRES Y APELLIDOS
+                        fechaCol = columns[3];     // Columna 4: FECHA DE GRADO
+                        diplomaCol = columns[5];   // Columna 6: NÚMERO DE DIPLOMA
+                        certificadoCol = columns[6]; // Columna 7: CERTIFICADO RECIBIDO
+                    } else {
+                        documentoCol = columns[0]; // Bachilleres: primera columna
+                        nombreCol = columns[1];
+                        fechaCol = columns[2];
+                        diplomaCol = columns[3];
+                        certificadoCol = null;
+                    }
+                    
+                    const normalizedDoc = documentoCol ? documentoCol.toString().replace(/[^0-9]/g, '') : '';
+                    const normalizedCedula = cedula.toString().replace(/[^0-9]/g, '');
+                    
+                    if (normalizedDoc === normalizedCedula) {
+                        diplomas.push({
+                            nombre: nombreCol || 'No disponible',
+                            fecha: fechaCol || 'No disponible',
+                            codigo: diplomaCol || 'No disponible',
+                            tipo: tipo,
+                            certificado: certificadoCol || null,
+                            institucion: 'INANDINA',
+                            ciudad: 'Villavicencio'
+                        });
+                    }
+                }
+                
+                return diplomas;
+            }
+
+            // Función para mostrar múltiples diplomas (carrusel o simple)
+            function displayMultipleDiplomas(diplomas) {
+                const resultDiv = document.getElementById('diploma-result');
+                
+                if (diplomas.length === 1) {
+                    displayDiplomaInfo(diplomas[0]);
+                    return;
+                }
+                
+                const carouselId = 'diplomasCarousel';
+                let carouselHTML = `
+                    <div class="container">
+                        <div class="alert alert-success mb-4">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Se encontraron <strong>${diplomas.length} diplomas</strong> para esta cédula
+                        </div>
+                        
+                        <div id="${carouselId}" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-indicators">`;
+                
+                for (let i = 0; i < diplomas.length; i++) {
+                    carouselHTML += `
+                        <button type="button" data-bs-target="#${carouselId}" data-bs-slide-to="${i}" 
+                                ${i === 0 ? 'class="active" aria-current="true"' : ''} 
+                                aria-label="Diploma ${i + 1}"></button>`;
+                }
+                
+                carouselHTML += `</div><div class="carousel-inner">`;
+                
+                diplomas.forEach((diploma, index) => {
+                    carouselHTML += `
+                        <div class="carousel-item ${index === 0 ? 'active' : ''}">
+                            <div class="card diploma-card">
+                                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-graduation-cap me-2"></i>
+                                        Diploma ${index + 1} de ${diplomas.length}
+                                    </h5>
+                                    <span class="badge bg-light text-success">${diploma.tipo}</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Nombre:</strong> ${diploma.nombre}</p>
+                                            <p><strong>Fecha de Graduación:</strong> ${diploma.fecha}</p>
+                                            <p><strong>Código de Verificación:</strong> ${diploma.codigo}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Tipo:</strong> ${diploma.tipo}</p>
+                                            ${diploma.certificado ? `<p><strong>Certificado Recibido:</strong> ${diploma.certificado}</p>` : ''}
+                                            <p><strong>Institución:</strong> ${diploma.institucion}</p>
+                                            <p><strong>Ciudad:</strong> ${diploma.ciudad}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+                
+                carouselHTML += `
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Anterior</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Siguiente</span>
+                        </button>
+                    </div>
+                </div>`;
+                
+                resultDiv.innerHTML = carouselHTML;
+                resultDiv.style.display = 'block';
+                hideResults();
+                hideError();
+            }
+
+            // Función principal de búsqueda para TODOS los diplomas
             async function searchDiploma(cedula) {
                 showLoading();
                 hideResults();
                 hideError();
                 
+                const resultDiv = document.getElementById('diploma-result');
+                if (resultDiv) {
+                    resultDiv.style.display = 'none';
+                }
+                
                 try {
-                    console.log('Buscando cédula:', cedula);
+                    console.log('Buscando TODOS los diplomas para cédula:', cedula);
+                    let allDiplomas = [];
                     
-                    // Buscar en técnicos primero
+                    // Buscar en técnicos
                     const tecnicosResponse = await fetch(gvizTecnicosUrl);
                     const tecnicosText = await tecnicosResponse.text();
-                    console.log('Datos técnicos obtenidos, tamaño:', tecnicosText.length);
+                    const tecnicosDiplomas = await searchAllInCSV(tecnicosText, cedula, 'Técnico');
+                    allDiplomas = allDiplomas.concat(tecnicosDiplomas);
                     
-                    let result = searchDirectInCSV(tecnicosText, cedula, 'Técnico');
-                    
-                    if (!result) {
-                        // Buscar en bachilleres si no se encuentra en técnicos
-                        const bachilleresResponse = await fetch(gvizBachilleresUrl);
-                        const bachilleresText = await bachilleresResponse.text();
-                        console.log('Datos bachilleres obtenidos, tamaño:', bachilleresText.length);
-                        
-                        result = searchDirectInCSV(bachilleresText, cedula, 'Bachiller');
-                    }
+                    // Buscar en bachilleres
+                    const bachilleresResponse = await fetch(gvizBachilleresUrl);
+                    const bachilleresText = await bachilleresResponse.text();
+                    const bachilleresDiplomas = await searchAllInCSV(bachilleresText, cedula, 'Bachiller');
+                    allDiplomas = allDiplomas.concat(bachilleresDiplomas);
                     
                     hideLoading();
                     
-                    if (result) {
-                        console.log('Diploma encontrado:', result);
-                        displayDiplomaInfo(result);
+                    if (allDiplomas.length > 0) {
+                        console.log(`Se encontraron ${allDiplomas.length} diplomas:`, allDiplomas);
+                        displayMultipleDiplomas(allDiplomas);
                     } else {
-                        console.log('Diploma no encontrado para cédula:', cedula);
                         showError('No se encontró ningún diploma registrado para esta cédula');
                     }
                 } catch (error) {
