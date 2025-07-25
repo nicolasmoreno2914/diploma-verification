@@ -285,11 +285,11 @@
                     
                     if (normalizedDoc === normalizedCedula) {
                         diplomas.push({
-                            nombre: nombreCol || 'No disponible',
-                            fecha: fechaCol || 'No disponible',
-                            codigo: diplomaCol || 'No disponible',
+                            nombres: nombreCol || 'No disponible',
+                            fechaGraduacion: fechaCol || 'No disponible',
+                            codigoVerificacion: diplomaCol || 'No disponible',
                             tipo: tipo,
-                            certificado: certificadoCol || null,
+                            certificadoRecibido: certificadoCol || null,
                             institucion: 'INANDINA',
                             ciudad: 'Villavicencio'
                         });
@@ -342,13 +342,13 @@
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <p><strong>Nombre:</strong> ${diploma.nombre}</p>
-                                            <p><strong>Fecha de Graduación:</strong> ${diploma.fecha}</p>
-                                            <p><strong>Código de Verificación:</strong> ${diploma.codigo}</p>
+                                            <p><strong>Nombre:</strong> ${diploma.nombres}</p>
+                                            <p><strong>Fecha de Graduación:</strong> ${diploma.fechaGraduacion}</p>
+                                            <p><strong>Código de Verificación:</strong> ${diploma.codigoVerificacion}</p>
                                         </div>
                                         <div class="col-md-6">
                                             <p><strong>Tipo:</strong> ${diploma.tipo}</p>
-                                            ${diploma.certificado ? `<p><strong>Certificado Recibido:</strong> ${diploma.certificado}</p>` : ''}
+                                            ${diploma.certificadoRecibido ? `<p><strong>Certificado Recibido:</strong> ${diploma.certificadoRecibido}</p>` : ''}
                                             <p><strong>Institución:</strong> ${diploma.institucion}</p>
                                             <p><strong>Ciudad:</strong> ${diploma.ciudad}</p>
                                         </div>
