@@ -94,62 +94,75 @@ function parseCSV(csvText) {
   return result;
 }
 
-// Función para procesar datos de una hoja específica
+// Función para procesar datos de una hoja específica con detección robusta
 function processSheetData(values, tipoGrado) {
   if (!values || values.length === 0) {
     return [];
   }
-
-  // Buscar la fila que contiene los encabezados reales
-  let headerRowIndex = -1;
-  let headers = [];
   
-  for (let i = 0; i < Math.min(values.length, 10); i++) {
-    const row = values[i];
-    if (row && row.some(cell => cell && (cell.toString().includes('NUMERO DE DOCUMENTO') || 
-                                         cell.toString().includes('TÉCNICOS LABORAL NÚMERO') ||
-                                         cell.toString().includes('BACHILLERES NUMERO DE D')))) {
-      headerRowIndex = i;
-      headers = row.map(cell => cell ? cell.toString().trim() : '');
-      break;
-    }
-  }
-  
-  if (headerRowIndex === -1) {
-    return [];
-  }
-  
-  // Procesar las filas de datos
-  const dataRows = values.slice(headerRowIndex + 1);
   const processedData = [];
   
-  for (const row of dataRows) {
+  // Procesar todas las filas buscando patrones de números de documento
+  for (let rowIndex = 0; rowIndex < values.length; rowIndex++) {
+    const row = values[rowIndex];
     if (!row || row.length === 0) continue;
     
-    const rowData = {};
-    headers.forEach((header, index) => {
-      if (header) {
-        rowData[header] = row[index] ? row[index].toString().trim() : '';
-      }
-    });
+    // Buscar número de documento válido en cualquier columna
+    let numeroDocumento = null;
+    let documentoColumnIndex = -1;
     
-    // Buscar el número de documento en las diferentes columnas posibles
-    const numeroDocumento = rowData['NUMERO DE DOCUMENTO'] || 
-                           rowData['TÉCNICOS LABORAL NÚMERO'] || 
-                           rowData['BACHILLERES NUMERO DE D'] ||
-                           rowData['BACHILLERES NUMERO DE DOCUMENTO'] ||
-                           rowData['NUMERO DE CEDULA'] ||
-                           rowData['CEDULA'] ||
-                           '';
-    
-    if (numeroDocumento && numeroDocumento.trim() !== '' && numeroDocumento.length >= 5) {
-      // Normalizar el número de documento (solo números)
-      const numeroLimpio = numeroDocumento.toString().replace(/[^0-9]/g, '');
-      if (numeroLimpio.length >= 5) {
-        rowData['NUMERO DE DOCUMENTO'] = numeroLimpio; // Normalizar la clave
-        rowData['Tipo_Grado'] = tipoGrado;
-        processedData.push(rowData);
+    for (let colIndex = 0; colIndex < row.length; colIndex++) {
+      const cellValue = row[colIndex] ? row[colIndex].toString().trim() : '';
+      
+      // Verificar si es un número de documento válido (solo números, 7-12 dígitos)
+      const numeroLimpio = cellValue.replace(/[^0-9]/g, '');
+      if (numeroLimpio.length >= 7 && numeroLimpio.length <= 12) {
+        // Verificar que no sea una fecha u otro tipo de número
+        if (!cellValue.includes('/') && !cellValue.includes('-') && 
+            !cellValue.includes(':') && !cellValue.includes('.') &&
+            numeroLimpio !== '0' && numeroLimpio !== '00000000') {
+          numeroDocumento = numeroLimpio;
+          documentoColumnIndex = colIndex;
+          break;
+        }
       }
+    }
+    
+    // Si encontramos un número de documento válido, procesar la fila
+    if (numeroDocumento && documentoColumnIndex !== -1) {
+      const rowData = {
+        'NUMERO DE DOCUMENTO': numeroDocumento,
+        'Tipo_Grado': tipoGrado
+      };
+      
+      // Mapear otras columnas importantes basándose en patrones comunes
+      for (let colIndex = 0; colIndex < row.length; colIndex++) {
+        const cellValue = row[colIndex] ? row[colIndex].toString().trim() : '';
+        
+        if (colIndex !== documentoColumnIndex && cellValue) {
+          // Detectar nombres (contiene letras y espacios, más de 5 caracteres)
+          if (/^[A-Za-zÀ-ÿ\s]+$/.test(cellValue) && cellValue.length > 5) {
+            if (!rowData['NOMBRES Y APELLIDOS'] || cellValue.length > rowData['NOMBRES Y APELLIDOS'].length) {
+              rowData['NOMBRES Y APELLIDOS'] = cellValue;
+            }
+          }
+          
+          // Detectar fechas (formato dd/mm/yyyy, dd-mm-yyyy, etc.)
+          if (/\d{1,2}[\/-]\d{1,2}[\/-]\d{4}/.test(cellValue) || 
+              /\d{4}[\/-]\d{1,2}[\/-]\d{1,2}/.test(cellValue)) {
+            rowData['FECHA DE GRADO'] = cellValue;
+          }
+          
+          // Detectar números de diploma (números de 2-5 dígitos que no sean el documento)
+          const numeroLimpio = cellValue.replace(/[^0-9]/g, '');
+          if (numeroLimpio.length >= 2 && numeroLimpio.length <= 5 && 
+              numeroLimpio !== numeroDocumento) {
+            rowData['NUMERO DE DIPLOMA'] = cellValue;
+          }
+        }
+      }
+      
+      processedData.push(rowData);
     }
   }
   
