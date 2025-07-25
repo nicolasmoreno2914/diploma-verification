@@ -386,52 +386,88 @@ app.get('/api/debug', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error en debug',
-      error: error.message
-    });
-  }
-});
-
-// Endpoint de prueba para verificar URLs directamente
 app.get('/api/test-urls', async (req, res) => {
   try {
-    const tecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1426995834`;
-    const bachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
-    
-    console.log('Probando URLs directamente...');
-    console.log('URL técnicos:', tecnicosUrl);
-    console.log('URL bachilleres:', bachilleresUrl);
+    const gvizTecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1426995834`;
+    const gvizBachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
     
     const [tecnicosResponse, bachilleresResponse] = await Promise.all([
-      fetch(tecnicosUrl).then(response => {
-        console.log('Respuesta técnicos status:', response.status);
-        return response.text();
-      }),
-      fetch(bachilleresUrl).then(response => {
-        console.log('Respuesta bachilleres status:', response.status);
-        return response.text();
-      })
+      fetch(gvizTecnicosUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)'
+        }
+      }).then(response => response.text()),
+      fetch(gvizBachilleresUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)'
+        }
+      }).then(response => response.text())
     ]);
-    
-    console.log('Datos técnicos recibidos, tamaño:', tecnicosResponse.length);
-    console.log('Datos bachilleres recibidos, tamaño:', bachilleresResponse.length);
     
     res.json({
       success: true,
       message: 'Test de URLs completado',
       tecnicos: {
-        url: tecnicosUrl,
+        url: gvizTecnicosUrl,
         data_length: tecnicosResponse.length,
         first_100_chars: tecnicosResponse.substring(0, 100)
       },
       bachilleres: {
-        url: bachilleresUrl,
+        url: gvizBachilleresUrl,
         data_length: bachilleresResponse.length,
         first_100_chars: bachilleresResponse.substring(0, 100)
       }
     });
   } catch (error) {
-    console.error('Error en test-urls:', error);
-    res.status(500).json({ success: false, message: 'Error en test de URLs', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Error en test de URLs',
+      error: error.message
+    });
+  }
+});
+
+// Endpoint específico para probar solo técnicos
+app.get('/api/test-tecnicos', async (req, res) => {
+  try {
+    const gvizTecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1426995834`;
+    
+    const tecnicosResponse = await fetch(gvizTecnicosUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)'
+      }
+    }).then(response => response.text());
+    
+    console.log('Datos técnicos recibidos, tamaño:', tecnicosResponse.length);
+    
+    // Procesar los datos
+    const tecnicosValues = parseCSV(tecnicosResponse);
+    const tecnicosData = processSheetData(tecnicosValues, 'Técnico');
+    
+    // Buscar la cédula específica
+    const cedulaBuscada = '1123114905';
+    const encontrado = tecnicosData.find(row => {
+      const identificacion = row['NUMERO DE DOCUMENTO'] || '';
+      return identificacion.toString().trim() === cedulaBuscada;
+    });
+    
+    res.json({
+      success: true,
+      message: 'Test de técnicos completado',
+      raw_data_length: tecnicosResponse.length,
+      parsed_rows: tecnicosValues.length,
+      processed_records: tecnicosData.length,
+      cedula_1123114905_found: !!encontrado,
+      found_record: encontrado || null,
+      sample_records: tecnicosData.slice(0, 3),
+      available_columns: tecnicosData.length > 0 ? Object.keys(tecnicosData[0]) : []
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error en test de técnicos',
+      error: error.message
+    });
   }
 });
 
