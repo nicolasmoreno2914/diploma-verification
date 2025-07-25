@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Columnas - Técnicos vs Bachilleres</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .column { padding: 5px; background: #f5f5f5; border: 1px solid #ddd; }
+        .found { background: #d4edda !important; border-color: #c3e6cb !important; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Debug: Estructura de Columnas</h1>
+    
+    <div class="section">
+        <h2>Técnicos - Primeras 5 líneas</h2>
+        <div id="tecnicos-lines"></div>
+        <h3>Análisis de Columnas (primera línea con datos)</h3>
+        <div id="tecnicos-columns" class="columns"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Bachilleres - Primeras 5 líneas</h2>
+        <div id="bachilleres-lines"></div>
+        <h3>Análisis de Columnas (primera línea con datos)</h3>
+        <div id="bachilleres-columns" class="columns"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Búsqueda de Cédula 1123114905 en Técnicos</h2>
+        <div id="search-result"></div>
+    </div>
+
+    <script>
+        // URLs de Google Sheets
+        const TECNICOS_URL = 'https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=1426995834';
+        const BACHILLERES_URL = 'https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=0';
+
+        // Función para parsear línea CSV
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        // Función para mostrar líneas
+        function displayLines(csvText, containerId) {
+            const lines = csvText.split('\n').slice(0, 5);
+            const container = document.getElementById(containerId);
+            container.innerHTML = lines.map((line, i) => 
+                `<div><strong>Línea ${i + 1}:</strong><pre>${line}</pre></div>`
+            ).join('');
+        }
+
+        // Función para analizar columnas
+        function analyzeColumns(csvText, containerId, targetCedula = null) {
+            const lines = csvText.split('\n');
+            let dataLine = '';
+            let lineIndex = -1;
+            
+            // Buscar la primera línea con datos reales
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (line.includes('1') && line.includes(',')) {
+                    dataLine = line;
+                    lineIndex = i;
+                    break;
+                }
+            }
+            
+            if (targetCedula) {
+                // Buscar línea específica con la cédula
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (line.includes(targetCedula)) {
+                        dataLine = line;
+                        lineIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            const container = document.getElementById(containerId);
+            
+            if (dataLine) {
+                const cells = parseCSVLine(dataLine);
+                container.innerHTML = `
+                    <p><strong>Línea ${lineIndex + 1}:</strong> ${dataLine}</p>
+                    <div class="columns">
+                        ${cells.map((cell, i) => {
+                            const isDocument = /^\d{6,}$/.test(cell.replace(/[^0-9]/g, ''));
+                            return `<div class="column ${isDocument ? 'found' : ''}">
+                                <strong>Col ${i}:</strong><br>
+                                "${cell}"
+                                ${isDocument ? '<br><em>(DOCUMENTO)</em>' : ''}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '<p>No se encontraron datos válidos</p>';
+            }
+        }
+
+        // Función para buscar cédula específica
+        async function searchSpecificCedula() {
+            try {
+                const response = await fetch(TECNICOS_URL);
+                const csvText = await response.text();
+                const lines = csvText.split('\n');
+                const targetCedula = '1123114905';
+                
+                let foundLine = '';
+                let lineIndex = -1;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (line.includes(targetCedula)) {
+                        foundLine = line;
+                        lineIndex = i;
+                        break;
+                    }
+                }
+                
+                const container = document.getElementById('search-result');
+                
+                if (foundLine) {
+                    const cells = parseCSVLine(foundLine);
+                    container.innerHTML = `
+                        <p><strong>¡ENCONTRADA EN LÍNEA ${lineIndex + 1}!</strong></p>
+                        <pre>${foundLine}</pre>
+                        <h4>Columnas parseadas:</h4>
+                        <div class="columns">
+                            ${cells.map((cell, i) => {
+                                const isTarget = cell.replace(/[^0-9]/g, '') === targetCedula;
+                                return `<div class="column ${isTarget ? 'found' : ''}">
+                                    <strong>Col ${i}:</strong><br>
+                                    "${cell}"
+                                    ${isTarget ? '<br><em>(CÉDULA OBJETIVO)</em>' : ''}
+                                </div>`;
+                            }).join('')}
+                        </div>
+                        <h4>Mapeo sugerido para técnicos:</h4>
+                        <ul>
+                            <li><strong>Documento:</strong> Columna donde está ${targetCedula}</li>
+                            <li><strong>Nombre:</strong> Columna anterior al documento</li>
+                            <li><strong>Fecha:</strong> Columna posterior al documento</li>
+                            <li><strong>Diploma:</strong> Buscar columna con número de diploma</li>
+                        </ul>
+                    `;
+                } else {
+                    container.innerHTML = `<p><strong>ERROR:</strong> No se encontró la cédula ${targetCedula} en técnicos</p>`;
+                }
+                
+            } catch (error) {
+                document.getElementById('search-result').innerHTML = `<p><strong>ERROR:</strong> ${error.message}</p>`;
+            }
+        }
+
+        // Cargar y analizar datos
+        async function loadData() {
+            try {
+                // Cargar técnicos
+                const tecnicosResponse = await fetch(TECNICOS_URL);
+                const tecnicosText = await tecnicosResponse.text();
+                displayLines(tecnicosText, 'tecnicos-lines');
+                analyzeColumns(tecnicosText, 'tecnicos-columns');
+                
+                // Cargar bachilleres
+                const bachilleresResponse = await fetch(BACHILLERES_URL);
+                const bachilleresText = await bachilleresResponse.text();
+                displayLines(bachilleresText, 'bachilleres-lines');
+                analyzeColumns(bachilleresText, 'bachilleres-columns');
+                
+                // Buscar cédula específica
+                await searchSpecificCedula();
+                
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+            }
+        }
+
+        // Cargar datos al iniciar
+        loadData();
+    </script>
+</body>
+</html>

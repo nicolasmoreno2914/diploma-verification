@@ -129,16 +129,40 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (cell === normalizedTarget) {
                         documentColumn = j;
                         
-                        // Mapeo dinámico basado en la posición encontrada
                         if (tipo === 'Técnico') {
-                            // Para técnicos: nombre suele estar 1 posición antes del documento
-                            nameColumn = Math.max(0, j - 1);
-                            // Fecha suele estar 1 posición después del documento
-                            dateColumn = j + 1;
-                            // Diploma suele estar 3 posiciones después del documento
-                            diplomaColumn = j + 3;
+                            // Para técnicos: mapeo específico basado en la estructura real
+                            // Buscar nombre en las columnas anteriores
+                            for (let k = j - 1; k >= 0; k--) {
+                                if (cells[k] && cells[k].toString().trim().length > 5 && 
+                                    !cells[k].toString().match(/^\d+$/) && 
+                                    cells[k].toString().includes(' ')) {
+                                    nameColumn = k;
+                                    break;
+                                }
+                            }
+                            
+                            // Buscar fecha en las columnas posteriores
+                            for (let k = j + 1; k < cells.length; k++) {
+                                const cellValue = cells[k].toString().trim();
+                                if (cellValue && (cellValue.includes('/') || cellValue.includes('-') || 
+                                    cellValue.match(/\d{1,2}\s+de\s+\w+\s+de\s+\d{4}/i) ||
+                                    cellValue.match(/\d{4}-\d{2}-\d{2}/) ||
+                                    cellValue.match(/\d{1,2}\/\d{1,2}\/\d{4}/))) {
+                                    dateColumn = k;
+                                    break;
+                                }
+                            }
+                            
+                            // Buscar número de diploma en las columnas posteriores
+                            for (let k = j + 1; k < cells.length; k++) {
+                                const cellValue = cells[k].toString().trim();
+                                if (cellValue && cellValue.match(/^\d{3,6}$/) && k !== dateColumn) {
+                                    diplomaColumn = k;
+                                    break;
+                                }
+                            }
                         } else {
-                            // Para bachilleres: mapeo estándar
+                            // Para bachilleres: mapeo fijo que ya funciona
                             nameColumn = 1;
                             dateColumn = 3;
                             diplomaColumn = 5;
