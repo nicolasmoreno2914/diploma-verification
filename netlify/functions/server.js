@@ -141,47 +141,114 @@ function processSheetData(values, tipoGrado) {
   return processedData;
 }
 
-// Función para leer datos de Google Sheets - Lee TODOS los registros sin limitaciones
+// Función para leer datos de Google Sheets con múltiples estrategias de fallback
 async function readGoogleSheetsData() {
   try {
-    // URLs gviz que evitan problemas de redirección
-    // GID correcto para egresados tecnicos: 1426995834 (hoja con 2000+ registros)
-    // GID correcto para egresados bachilleres: 0
-    const tecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1426995834`;
-    const bachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
+    console.log('Iniciando lectura de datos de Google Sheets...');
     
-    console.log('Leyendo datos completos de Google Sheets...');
+    // Estrategia 1: URLs gviz/tq
+    const gvizTecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=1426995834`;
+    const gvizBachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
     
-    // Leer ambas hojas en paralelo
-    const [tecnicosResponse, bachilleresResponse] = await Promise.all([
-      fetch(tecnicosUrl).then(response => response.text()),
-      fetch(bachilleresUrl).then(response => response.text())
-    ]);
+    // Estrategia 2: URLs export (fallback)
+    const exportTecnicosUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=1426995834`;
+    const exportBachilleresUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=0`;
     
-    console.log('Datos de técnicos recibidos, tamaño:', tecnicosResponse.length);
-    console.log('Datos de bachilleres recibidos, tamaño:', bachilleresResponse.length);
+    let tecnicosData = [];
+    let bachilleresData = [];
     
-    // Parsear los datos CSV
-    const tecnicosValues = parseCSV(tecnicosResponse);
-    const bachilleresValues = parseCSV(bachilleresResponse);
-    
-    console.log('Filas de técnicos parseadas:', tecnicosValues.length);
-    console.log('Filas de bachilleres parseadas:', bachilleresValues.length);
-    
-    // Procesar los datos
-    const tecnicosData = processSheetData(tecnicosValues, 'Técnico');
-    const bachilleresData = processSheetData(bachilleresValues, 'Bachiller');
-    
-    console.log('Registros válidos de técnicos:', tecnicosData.length);
-    console.log('Registros válidos de bachilleres:', bachilleresData.length);
+    // Intentar estrategia 1: gviz/tq
+    try {
+      console.log('Intentando estrategia 1: gviz/tq URLs');
+      const [tecnicosResponse, bachilleresResponse] = await Promise.all([
+        fetch(gvizTecnicosUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)'
+          }
+        }).then(response => {
+          console.log('Respuesta técnicos gviz status:', response.status);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.text();
+        }),
+        fetch(gvizBachilleresUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)'
+          }
+        }).then(response => {
+          console.log('Respuesta bachilleres gviz status:', response.status);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.text();
+        })
+      ]);
+      
+      console.log('Datos técnicos gviz recibidos, tamaño:', tecnicosResponse.length);
+      console.log('Datos bachilleres gviz recibidos, tamaño:', bachilleresResponse.length);
+      
+      if (tecnicosResponse.length > 100 && bachilleresResponse.length > 100) {
+        const tecnicosValues = parseCSV(tecnicosResponse);
+        const bachilleresValues = parseCSV(bachilleresResponse);
+        
+        tecnicosData = processSheetData(tecnicosValues, 'Técnico');
+        bachilleresData = processSheetData(bachilleresValues, 'Bachiller');
+        
+        console.log('Estrategia 1 exitosa - Técnicos:', tecnicosData.length, 'Bachilleres:', bachilleresData.length);
+      } else {
+        throw new Error('Datos insuficientes en estrategia 1');
+      }
+    } catch (gvizError) {
+      console.log('Estrategia 1 falló:', gvizError.message);
+      
+      // Intentar estrategia 2: export URLs
+      try {
+        console.log('Intentando estrategia 2: export URLs');
+        const [tecnicosResponse, bachilleresResponse] = await Promise.all([
+          fetch(exportTecnicosUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)'
+            }
+          }).then(response => {
+            console.log('Respuesta técnicos export status:', response.status);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.text();
+          }),
+          fetch(exportBachilleresUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)'
+            }
+          }).then(response => {
+            console.log('Respuesta bachilleres export status:', response.status);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.text();
+          })
+        ]);
+        
+        console.log('Datos técnicos export recibidos, tamaño:', tecnicosResponse.length);
+        console.log('Datos bachilleres export recibidos, tamaño:', bachilleresResponse.length);
+        
+        const tecnicosValues = parseCSV(tecnicosResponse);
+        const bachilleresValues = parseCSV(bachilleresResponse);
+        
+        tecnicosData = processSheetData(tecnicosValues, 'Técnico');
+        bachilleresData = processSheetData(bachilleresValues, 'Bachiller');
+        
+        console.log('Estrategia 2 exitosa - Técnicos:', tecnicosData.length, 'Bachilleres:', bachilleresData.length);
+      } catch (exportError) {
+        console.error('Ambas estrategias fallaron:', { gvizError: gvizError.message, exportError: exportError.message });
+        throw new Error('No se pudieron obtener datos de Google Sheets con ninguna estrategia');
+      }
+    }
     
     const totalData = [...tecnicosData, ...bachilleresData];
     console.log('Total de registros combinados:', totalData.length);
     
+    if (totalData.length === 0) {
+      throw new Error('No se encontraron registros válidos en Google Sheets');
+    }
+    
     return totalData;
     
   } catch (error) {
-    console.error('Error leyendo Google Sheets:', error);
+    console.error('Error crítico leyendo Google Sheets:', error);
     throw error;
   }
 }
