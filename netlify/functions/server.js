@@ -522,7 +522,7 @@ app.get('/api/test-tecnicos', async (req, res) => {
   }
 });
 
-// Función de búsqueda directa en CSV sin procesamiento complejo
+// Función de búsqueda directa en CSV con mapeo correcto de columnas
 function searchDirectInCSV(csvText, targetId) {
   const lines = csvText.split('\n');
   const normalizedTarget = targetId.toString().replace(/[^0-9]/g, '');
@@ -533,40 +533,26 @@ function searchDirectInCSV(csvText, targetId) {
       // Parsear la línea encontrada
       const cells = parseCSV(line + '\n')[0] || [];
       
-      // Crear objeto con los datos encontrados
+      // Mapeo basado en la estructura real del CSV de técnicos:
+      // Columna 0: Número Celular
+      // Columna 1: NOMBRES Y APELLIDOS
+      // Columna 2: TÉCNICOS LABORAL NÚMERO DE DOCUMENTO
+      // Columna 3: FECHA DE GRADO
+      // Columna 4: No. Acta
+      // Columna 5: NÚMERO DE DIPLOMA
+      
       const rowData = {
-        'NUMERO DE DOCUMENTO': normalizedTarget,
-        'NOMBRES Y APELLIDOS': '',
-        'FECHA DE GRADO': '',
-        'NUMERO DE DIPLOMA': ''
+        'NUMERO DE DOCUMENTO': cells[2] ? cells[2].toString().trim() : normalizedTarget,
+        'NOMBRES Y APELLIDOS': cells[1] ? cells[1].toString().trim() : '',
+        'FECHA DE GRADO': cells[3] ? cells[3].toString().trim() : '',
+        'NUMERO DE DIPLOMA': cells[5] ? cells[5].toString().trim() : ''
       };
       
-      // Mapear datos de las celdas
-      for (let j = 0; j < cells.length; j++) {
-        const cellValue = cells[j] ? cells[j].toString().trim() : '';
-        
-        // Detectar nombres (letras y espacios, más de 5 caracteres)
-        if (/^[A-Za-zÀ-ÿ\s]+$/.test(cellValue) && cellValue.length > 5) {
-          if (!rowData['NOMBRES Y APELLIDOS'] || cellValue.length > rowData['NOMBRES Y APELLIDOS'].length) {
-            rowData['NOMBRES Y APELLIDOS'] = cellValue;
-          }
-        }
-        
-        // Detectar fechas
-        if (/\d{1,2}[\/-]\d{1,2}[\/-]\d{4}/.test(cellValue) || 
-            /\d{4}[\/-]\d{1,2}[\/-]\d{1,2}/.test(cellValue)) {
-          rowData['FECHA DE GRADO'] = cellValue;
-        }
-        
-        // Detectar números de diploma (2-5 dígitos que no sean el documento)
-        const numeroLimpio = cellValue.replace(/[^0-9]/g, '');
-        if (numeroLimpio.length >= 2 && numeroLimpio.length <= 5 && 
-            numeroLimpio !== normalizedTarget) {
-          rowData['NUMERO DE DIPLOMA'] = cellValue;
-        }
+      // Verificar que realmente encontramos el documento correcto
+      const documentoEncontrado = rowData['NUMERO DE DOCUMENTO'].replace(/[^0-9]/g, '');
+      if (documentoEncontrado === normalizedTarget) {
+        return rowData;
       }
-      
-      return rowData;
     }
   }
   
