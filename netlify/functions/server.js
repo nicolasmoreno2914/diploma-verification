@@ -584,6 +584,59 @@ app.get('/api/search-direct', async (req, res) => {
   }
 });
 
+// Endpoint para debug detallado de encabezados CSV
+app.get('/api/debug-headers', async (req, res) => {
+  try {
+    const gvizTecnicosUrl = `https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=1426995834`;
+    const gvizBachilleresUrl = `https://docs.google.com/spreadsheets/d/1s4beQ2-EJOwkjKwy_6jvJOtABPjD1104QyxS7kympo0/gviz/tq?tqx=out:csv&gid=0`;
+    
+    // Fetch técnicos data
+    const tecnicosResponse = await fetch(gvizTecnicosUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)' }
+    }).then(response => response.text());
+    
+    const tecnicosLines = tecnicosResponse.split('\n');
+    const tecnicosFirst10Lines = tecnicosLines.slice(0, 10).map((line, index) => ({
+      line_number: index,
+      content: line,
+      parsed_cells: parseCSV(line + '\n')[0] || []
+    }));
+    
+    // Fetch bachilleres data
+    const bachilleresResponse = await fetch(gvizBachilleresUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiplomaVerification/1.0)' }
+    }).then(response => response.text());
+    
+    const bachilleresLines = bachilleresResponse.split('\n');
+    const bachilleresFirst10Lines = bachilleresLines.slice(0, 10).map((line, index) => ({
+      line_number: index,
+      content: line,
+      parsed_cells: parseCSV(line + '\n')[0] || []
+    }));
+    
+    res.json({
+      success: true,
+      message: 'Debug de encabezados CSV',
+      tecnicos: {
+        total_lines: tecnicosLines.length,
+        first_10_lines: tecnicosFirst10Lines
+      },
+      bachilleres: {
+        total_lines: bachilleresLines.length,
+        first_10_lines: bachilleresFirst10Lines
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error en debug de encabezados:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en debug de encabezados',
+      error: error.message
+    });
+  }
+});
+
 // Ruta de estadísticas
 app.get('/api/stats', async (req, res) => {
   try {
