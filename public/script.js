@@ -4,9 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Elementos del DOM
     const form = document.getElementById('verificationForm');
     const cedulaInput = document.getElementById('cedula');
-    const loadingDiv = document.getElementById('loading');
-    const resultsDiv = document.getElementById('results');
-    const errorDiv = document.getElementById('error');
+    const loadingDiv = document.getElementById('loadingSpinner');
+    const resultsDiv = document.getElementById('resultsCard');
+    const errorDiv = document.getElementById('errorCard');
     const errorMessage = document.getElementById('errorMessage');
     
     // Cargar estadísticas fijas
