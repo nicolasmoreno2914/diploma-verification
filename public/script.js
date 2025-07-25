@@ -277,9 +277,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Función para cargar estadísticas fijas
     function loadStatistics() {
         // Usar valores fijos según decisión del usuario
-        document.getElementById('diplomasCount').textContent = '2,794';
-        document.getElementById('studentsCount').textContent = '2,794';
-        document.getElementById('institutionsCount').textContent = '1';
+        document.getElementById('totalDiplomas').textContent = '2,794';
+        document.getElementById('totalEstudiantes').textContent = '2,794';
+        document.getElementById('totalInstituciones').textContent = '1';
     }
 
     // Funciones de utilidad para mostrar/ocultar elementos
